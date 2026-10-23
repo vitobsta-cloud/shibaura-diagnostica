@@ -8,7 +8,6 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="manifest" href="manifest.json">
     <title>Shibaura SCARA Alarm Diagnostic</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -173,6 +172,50 @@
     </style>
 </head>
 <body>
+<div id="gateWrap" style="display:none;position:fixed;inset:0;z-index:99999;background:#1a1a2e;align-items:center;justify-content:center;padding:20px;font-family:system-ui,sans-serif">
+  <form id="gateForm" style="background:#fff;border-radius:16px;padding:28px 24px;width:100%;max-width:320px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.4)">
+    <div style="font-size:2.2rem">🔒</div>
+    <div style="font-size:1.15rem;font-weight:800;color:#1a1a2e;margin:6px 0 4px">Shibaura SCARA</div>
+    <div style="font-size:.85rem;color:#6b7280;margin-bottom:16px">Inserisci la password per accedere</div>
+    <input id="gatePwd" type="password" inputmode="numeric" autocomplete="off" placeholder="Password" style="width:100%;padding:12px;font-size:1.1rem;text-align:center;border:2px solid #d1d5db;border-radius:10px;outline:none">
+    <div id="gateErr" style="color:#e94560;font-size:.85rem;min-height:1.2em;margin:8px 0"></div>
+    <button type="submit" style="width:100%;padding:12px;border:0;border-radius:10px;background:#e94560;color:#fff;font-size:1rem;font-weight:700">Accedi</button>
+  </form>
+</div>
+<script>
+(function(){
+  var HASH="653ab0288fa7354614435a940b6367e8c09107220592cd889907c777f91cb3f4", KEY='scara_auth_v1';
+  var gated = /github\.io$/.test(location.hostname) || /[?&]gate=1/.test(location.search);
+  function unlock(){
+    var w=document.getElementById('gateWrap'); if(w) w.style.display='none';
+    if(!document.querySelector('link[rel=manifest]')){var l=document.createElement('link');l.rel='manifest';l.href='manifest.json';document.head.appendChild(l);}
+    if('serviceWorker' in navigator && location.protocol.indexOf('http')===0){navigator.serviceWorker.register('service-worker.js').catch(function(){});}
+  }
+  if(!gated){ document.addEventListener('DOMContentLoaded',unlock); return; }
+  function sha(t){
+    if(!(window.crypto&&crypto.subtle)) return Promise.resolve(null);
+    return crypto.subtle.digest('SHA-256',new TextEncoder().encode('scara-v1:'+t)).then(function(b){
+      return Array.prototype.map.call(new Uint8Array(b),function(x){return ('0'+x.toString(16)).slice(-2);}).join('');
+    });
+  }
+  var ok=false; try{ ok = localStorage.getItem(KEY)===HASH; }catch(e){}
+  function show(){ var w=document.getElementById('gateWrap'); w.style.display='flex'; setTimeout(function(){document.getElementById('gatePwd').focus();},50); }
+  function init(){
+    if(ok){ unlock(); return; }
+    show();
+    document.getElementById('gateForm').addEventListener('submit',function(ev){
+      ev.preventDefault();
+      var v=document.getElementById('gatePwd').value.trim();
+      sha(v).then(function(h){
+        if(h===HASH){ try{localStorage.setItem(KEY,HASH);}catch(e){} unlock(); }
+        else { document.getElementById('gateErr').textContent='Password errata'; document.getElementById('gatePwd').value=''; }
+      });
+    });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+})();
+</script>
+
 <div class="container">
   <div class="main-card">
     <div class="header">
@@ -465,6 +508,29 @@
 
 
 
+
+  /* Pagine ricambi specifiche per braccio (manuali che coprono piu' modelli) */
+  const ARM_PARTS_BY_ARM = {
+    'STE80773': { 'THP550':{robot:110,controller:112}, 'TH450A':{robot:111,controller:113}, 'TH550A':{robot:111,controller:113} },
+    'STE85390': { 'TH180':{robot:71,controller:null}, 'TH250A':{robot:70,controller:null}, 'TH350A':{robot:70,controller:null} },
+    'STE80885': { 'SR-404HC':{robot:60,controller:70}, 'SR-624HC':{robot:64,controller:70}, 'SR-405HC':{robot:66,controller:70} },
+    'STE85357': {}
+  };
+  function partsFor(man, arm, ctrl){
+    const base = ARM_PARTS_PAGES[man];
+    if(!base) return base;
+    let r = Object.assign({}, base);
+    const o = ARM_PARTS_BY_ARM[man] && ARM_PARTS_BY_ARM[man][arm];
+    if(o) r = Object.assign(r, o);
+    if(man==='STE85357'){            /* THL: pagina robot e controller dipendono da modello e controller */
+      const n = parseInt((arm||'').replace(/\D/g,''),10) || 0;
+      const grp = n<=400 ? 0 : (n<=700 ? 1 : 2);
+      r.robot = [309,310,311][grp];
+      const small = n<=400;
+      r.controller = /^TSL/.test(ctrl||'') ? (small?312:313) : (small?316:317);
+    }
+    return r;
+  }
 
   /* ════════ STATO ════════ */
   let curModel=null, curCtrl=null, curArm=null, curMaint=null, searchMode='codice';
@@ -787,7 +853,7 @@
 
   /* ════════ PULSANTI RAPIDI ════════ */
   function showParts(){
-    const p = ARM_PARTS_PAGES[curMaint];
+    const p = partsFor(curMaint, curArm, curCtrl);
     let h = '<div class="result-card">';
     h += `<div style="font-weight:800;color:#1a1a2e;margin-bottom:8px;">📦 Lista Ricambi</div>`;
     h += `<div style="font-size:0.85rem;color:#495057;margin-bottom:14px;">Manuale: <b>${curMaint}</b> · Braccio: <b>${esc(curArm)}</b> · Controller: <b>${esc(curCtrl)}</b></div>`;
@@ -1231,6 +1297,5 @@
   <span class="logo"><span class="dot"></span>TR/software</span>
 </div>
 
-<script>if('serviceWorker' in navigator && location.protocol.startsWith('http')){window.addEventListener('load',()=>navigator.serviceWorker.register('service-worker.js').catch(()=>{}));}</script>
 </body>
 </html>
