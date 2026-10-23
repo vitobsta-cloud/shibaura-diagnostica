@@ -1,0 +1,14 @@
+COME PUBBLICARE SU GITHUB PAGES (con GitHub Desktop)
+
+1. GitHub Desktop > File > New repository: nome "shibaura-scara", cartella locale a piacere. Crea.
+2. Copia nella cartella del repository TUTTO il contenuto di questa cartella
+   (index.html, manifest.json, service-worker.js, icone, pdfjs\, README.md).
+3. Estrai i due zip dei PDF e copia tutti i file .pdf dentro la cartella "pdf" del repository
+   (dalle cartelle www\pdf dei due zip: manuali vecchi + TS5000 = 131 file).
+4. GitHub Desktop: scrivi un messaggio, "Commit to main", poi "Publish repository"
+   (togli la spunta "Keep this code private" per usare Pages gratis).
+5. Su github.com > repository > Settings > Pages > Source: "Deploy from branch" > main / (root) > Save.
+6. Dopo 1-2 minuti l'app e' su:  https://vitobsta-cloud.github.io/shibaura-scara/
+
+Nota: i PDF STE85356 (54 MB) e STEA1162 (28 MB) superano i 25 MB, quindi NON caricarli dal browser
+(Add file > Upload): usa GitHub Desktop come sopra.
