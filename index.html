@@ -175,17 +175,17 @@
         /* ===== PDF a tutto schermo ===== */
         #pdfScreen { display:none; position:fixed; inset:0; z-index:2000; background:#4a4d52; flex-direction:column; }
         #pdfScreen.visible { display:flex; }
-        .pdf-topbar { flex:0 0 auto; display:flex; align-items:center; gap:10px; background:#1a1a2e; color:#fff; padding:6px 8px 6px 14px; padding-top:max(6px, env(safe-area-inset-top)); min-height:44px; }
-        .pdf-topbar .pdf-title { flex:1; font-size:.9rem; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-        .pdf-pageind { font-size:.82rem; font-weight:700; background:rgba(255,255,255,.14); padding:5px 12px; border-radius:14px; white-space:nowrap; }
-        .pdf-topbar .pdf-close { font-size:1.3rem; padding:6px 12px; }
+        .pdf-topbar { flex:0 0 auto; display:flex; align-items:center; gap:10px; background:#1a1a2e; color:#fff; padding:2px 4px 2px 10px; padding-top:max(2px, env(safe-area-inset-top)); min-height:34px; }
+        .pdf-topbar .pdf-title { flex:1; font-size:.8rem; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .pdf-pageind { font-size:.75rem; font-weight:700; background:rgba(255,255,255,.14); padding:3px 10px; border-radius:12px; white-space:nowrap; }
+        .pdf-topbar .pdf-close { font-size:1.15rem; padding:4px 10px; }
         #pdfScreen .pdf-container { flex:1 1 auto; min-height:0; padding:0; margin:0; background:transparent; border-radius:0; overflow:auto; -webkit-overflow-scrolling:touch; touch-action:pan-x pan-y; text-align:left; overscroll-behavior:contain; display:flex; }
-        .pdf-sizer { position:relative; overflow:hidden; margin:auto; flex:0 0 auto; }
+        .pdf-sizer { position:relative; overflow:hidden; margin:0 auto; flex:0 0 auto; }
         #pdfScreen .pdf-page-wrapper { position:absolute; left:0; top:0; display:block; transform-origin:0 0; }
         #pdfScreen #pdfCanvas { box-shadow:none; border-radius:0; max-width:none; margin:0; }
-        .pdf-fab { position:fixed; bottom:calc(22px + env(safe-area-inset-bottom)); width:58px; height:58px; border-radius:50%; border:none; background:rgba(26,26,46,.80); color:#fff; font-size:2.2rem; line-height:1; padding:0 0 4px; box-shadow:0 4px 14px rgba(0,0,0,.4); z-index:2100; cursor:pointer; -webkit-tap-highlight-color:transparent; }
-        .pdf-fab.prev { left:16px; }
-        .pdf-fab.next { right:16px; }
+        .pdf-fab { position:fixed; bottom:calc(14px + env(safe-area-inset-bottom)); width:46px; height:46px; border-radius:50%; border:none; background:rgba(26,26,46,.55); color:#fff; font-size:1.9rem; line-height:1; padding:0 0 4px; box-shadow:0 4px 14px rgba(0,0,0,.4); z-index:2100; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+        .pdf-fab.prev { left:8px; }
+        .pdf-fab.next { right:8px; }
         .pdf-fab:active { background:rgba(233,69,96,.9); }
         .pdf-fab:disabled { opacity:.25; }
 </style>
@@ -660,21 +660,38 @@
       pdfApplyZoom(pdfZoom);
       if(_pageChanged){ container.scrollTop = 0; container.scrollLeft = 0; }
 
-      await page.render({ canvasContext: ctx, viewport: vp }).promise;
+      await page.render({ canvasContext: ctx, viewport: vp, background: '#ffffff' }).promise;
+
+      // Ritaglia automaticamente i margini bianchi: il contenuto riempie tutta la larghezza dello schermo
+      var bb = pdfContentBBox(canvas);
+      var fw = Math.max(0.35, bb.x1 - bb.x0);
+      var k = Math.min(2.4, 1 / fw);
+      var cssW2 = cssW * k, cssH2 = cssH * k, effScale = cssScale * k;
+      canvas.style.width  = cssW2 + 'px';
+      canvas.style.height = cssH2 + 'px';
+      if(wrapper){
+        wrapper.style.width  = cssW2 + 'px';
+        wrapper.style.height = cssH2 + 'px';
+        wrapper.style.setProperty('--scale-factor', effScale);
+      }
+      pdfOffX = bb.x0 * cssW2; pdfOffY = bb.y0 * cssH2;
+      pdfBaseW = Math.min(cssW, (bb.x1 - bb.x0) * cssW2);
+      pdfBaseH = (bb.y1 - bb.y0) * cssH2;
+      pdfApplyZoom(pdfZoom);
 
       // Renderizza il TEXT LAYER (testo trasparente selezionabile)
       try {
         const textLayerDiv = document.getElementById('pdfTextLayer');
         if(textLayerDiv){
           textLayerDiv.innerHTML = '';
-          textLayerDiv.style.width  = cssW + 'px';
-          textLayerDiv.style.height = cssH + 'px';
+          textLayerDiv.style.width  = cssW2 + 'px';
+          textLayerDiv.style.height = cssH2 + 'px';
           const textContent = await page.getTextContent();
           if(typeof pdfjsLib.renderTextLayer === 'function'){
             await pdfjsLib.renderTextLayer({
               textContentSource: textContent,
               container: textLayerDiv,
-              viewport: cssViewport,
+              viewport: page.getViewport({scale: effScale}),
               textDivs: []
             }).promise;
           }
@@ -682,7 +699,6 @@
       } catch(txErr){
         console.warn('text layer error:', txErr);
       }
-
 
     } catch(err){
       if(err && err.name !== 'RenderingCancelledException') console.error('render error:', err);
@@ -697,14 +713,31 @@
 
 
   /* ===== Zoom interno al PDF (pizzico a due dita, doppio tocco, Ctrl+rotella) ===== */
-  var pdfZoom = 1, pdfBaseW = 0, pdfBaseH = 0, pdfLastPage = 0;
+  var pdfZoom = 1, pdfBaseW = 0, pdfBaseH = 0, pdfLastPage = 0, pdfOffX = 0, pdfOffY = 0;
+  // Trova il riquadro del contenuto (non bianco) della pagina, in frazioni 0..1
+  function pdfContentBBox(canvas){
+    try{
+      var tw = Math.min(canvas.width, 700), th = Math.max(1, Math.round(canvas.height * tw / canvas.width));
+      var t = document.createElement('canvas'); t.width = tw; t.height = th;
+      var tc = t.getContext('2d', {willReadFrequently:true}); tc.fillStyle = '#fff'; tc.fillRect(0,0,tw,th);
+      tc.drawImage(canvas, 0, 0, tw, th);
+      var d = tc.getImageData(0,0,tw,th).data, x0=tw, y0=th, x1=-1, y1=-1;
+      for(var y=0; y<th; y++){ for(var x=0; x<tw; x++){
+        var i=(y*tw+x)*4;
+        if((d[i]+d[i+1]+d[i+2])/3 < 242){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; }
+      }}
+      if(x1 < 0) return {x0:0,y0:0,x1:1,y1:1};
+      var pad = 0.012;
+      return { x0:Math.max(0, x0/tw - pad), y0:Math.max(0, y0/th - pad), x1:Math.min(1, (x1+1)/tw + pad), y1:Math.min(1, (y1+1)/th + pad) };
+    }catch(e){ return {x0:0,y0:0,x1:1,y1:1}; }
+  }
   function pdfApplyZoom(z){
     pdfZoom = z;
     var sizer = document.getElementById('pdfSizer'), w = document.getElementById('pdfPageWrapper');
     if(!sizer || !w) return;
     sizer.style.width  = (pdfBaseW * z) + 'px';
     sizer.style.height = (pdfBaseH * z) + 'px';
-    w.style.transform = 'scale(' + z + ')';
+    w.style.transform = 'scale(' + z + ') translate(' + (-pdfOffX) + 'px,' + (-pdfOffY) + 'px)';
   }
   function pdfZoomAt(newZ, fx, fy){   // fx, fy: punto fisso in coordinate del contenitore
     var c = document.getElementById('pdfContainer'); if(!c) return;
@@ -1292,7 +1325,7 @@
             <div>
               <div class="v-title current">v32 <span class="date">(24/10)</span></div>
               <div class="v-body">
-                • <b>PDF a tutto schermo</b>: barra sottile, tasti ‹ › sovrapposti alla pagina, zoom a due dita e doppio tocco<br>
+                • <b>PDF a tutto schermo</b>: margini bianchi ritagliati in automatico, barra sottile, tasti ‹ › sovrapposti, zoom a due dita e doppio tocco<br>
                 • <b>Fix Ricambi per braccio</b> (TH450A/TH550A/THP550, THL, SR-HC, TH180): ora apre la pagina giusta<br>
                 • Nuovo controller <b>SR7000</b> nella serie SR<br>
                 • Versione web installabile (PWA)
