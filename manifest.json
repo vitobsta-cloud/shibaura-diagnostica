@@ -1,26 +1,22 @@
 {
-  "id": "./",
   "name": "Shibaura SCARA Diagnostica",
   "short_name": "SCARA Diag",
   "description": "Diagnostica allarmi robot SCARA Toshiba/Shibaura",
-  "start_url": "./index.html?src=pwa",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "orientation": "any",
   "background_color": "#1a1a2e",
   "theme_color": "#eef0f5",
   "icons": [
     {
       "src": "icon-192.png",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
+      "type": "image/png"
     },
     {
       "src": "icon-512.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
+      "type": "image/png"
     },
     {
       "src": "icon-512.png",
