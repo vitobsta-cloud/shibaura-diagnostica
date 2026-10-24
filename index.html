@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover, interactive-widget=resizes-content">
     <script src="pdfjs/pdf.min.js" defer></script>
     <meta name="theme-color" content="#eef0f5">
     <link rel="manifest" href="manifest.json">
@@ -188,6 +188,18 @@
         .pdf-fab.next { right:8px; }
         .pdf-fab:active { background:rgba(233,69,96,.9); }
         .pdf-fab:disabled { opacity:.25; }
+
+        /* ===== Ricerca nel PDF ===== */
+        .pdf-searchbar { flex:0 0 auto; display:flex; align-items:center; gap:6px; background:#1a1a2e; padding:6px 8px; padding-bottom:max(6px, env(safe-area-inset-bottom)); }
+        .pdf-searchbar input { flex:1; min-width:0; height:38px; border:none; border-radius:19px; padding:0 14px; font-size:.95rem; background:#fff; color:#1a1a2e; outline:none; }
+        .pdf-search-info { color:#fff; font-size:.75rem; font-weight:700; min-width:44px; text-align:center; white-space:nowrap; }
+        .pdf-sbtn { width:38px; height:38px; border:none; border-radius:50%; background:rgba(255,255,255,.16); color:#fff; font-size:.95rem; padding:0; cursor:pointer; }
+        .pdf-sbtn.go { background:#e94560; }
+        .pdf-sbtn:active { background:rgba(255,255,255,.35); }
+        .pdf-fab { bottom:calc(66px + env(safe-area-inset-bottom)) !important; }
+        .pdf-hl-layer { position:absolute; inset:0; pointer-events:none; z-index:1; }
+        .pdf-hl { position:absolute; background:rgba(255,214,0,.5); mix-blend-mode:multiply; border-radius:2px; }
+        .pdf-hl.cur { background:rgba(255,120,0,.6); outline:2px solid #e94560; }
 </style>
 </head>
 <body>
@@ -306,10 +318,18 @@
         <div class="pdf-sizer" id="pdfSizer">
           <div class="pdf-page-wrapper" id="pdfPageWrapper">
             <canvas id="pdfCanvas"></canvas>
+            <div class="pdf-hl-layer" id="pdfHlLayer"></div>
             <div class="textLayer" id="pdfTextLayer"></div>
           </div>
         </div>
       </div>
+      <form class="pdf-searchbar" onsubmit="pdfDoSearch();return false">
+        <input id="pdfSearchInput" type="search" placeholder="Cerca nel PDF…" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search">
+        <span id="pdfSearchInfo" class="pdf-search-info"></span>
+        <button type="button" class="pdf-sbtn" onclick="pdfHitStep(-1)" aria-label="Risultato precedente">▲</button>
+        <button type="button" class="pdf-sbtn" onclick="pdfHitStep(1)" aria-label="Risultato successivo">▼</button>
+        <button type="submit" class="pdf-sbtn go" aria-label="Cerca">🔍</button>
+      </form>
       <button class="pdf-fab prev" id="pdfPrev" onclick="pdfPrevPage()" aria-label="Pagina precedente">‹</button>
       <button class="pdf-fab next" id="pdfNext" onclick="pdfNextPage()" aria-label="Pagina successiva">›</button>
     </div>
@@ -608,7 +628,7 @@
       pdfTotPages = pdfDoc.numPages;
       if(pdfCurPage > pdfTotPages) pdfCurPage = 1;
       document.getElementById('pdfTotPage').textContent = pdfTotPages;
-      container.innerHTML = '<div class="pdf-sizer" id="pdfSizer"><div class="pdf-page-wrapper" id="pdfPageWrapper"><canvas id="pdfCanvas"></canvas><div class="textLayer" id="pdfTextLayer"></div></div></div>';
+      container.innerHTML = '<div class="pdf-sizer" id="pdfSizer"><div class="pdf-page-wrapper" id="pdfPageWrapper"><canvas id="pdfCanvas"></canvas><div class="pdf-hl-layer" id="pdfHlLayer"></div><div class="textLayer" id="pdfTextLayer"></div></div></div>'; pdfClearSearch(true);
       await renderPdfPage(pdfCurPage);
     } catch(err){
       console.error('PDF error:', err);
@@ -688,12 +708,15 @@
           textLayerDiv.style.height = cssH2 + 'px';
           const textContent = await page.getTextContent();
           if(typeof pdfjsLib.renderTextLayer === 'function'){
+            pdfCurDivs = []; pdfCurStrs = [];
             await pdfjsLib.renderTextLayer({
               textContentSource: textContent,
               container: textLayerDiv,
               viewport: page.getViewport({scale: effScale}),
-              textDivs: []
+              textDivs: pdfCurDivs,
+              textContentItemsStr: pdfCurStrs
             }).promise;
+            pdfApplyHighlights(pdfSearch.scrollPending); pdfSearch.scrollPending = false;
           }
         }
       } catch(txErr){
@@ -776,12 +799,98 @@
     }
     if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
   })();
+
+  /* ===== Ricerca di testo nel PDF ===== */
+  var pdfSearch = { term:'', hits:[], gi:-1, token:0, cache:{}, scrollPending:false };
+  var pdfCurDivs = [], pdfCurStrs = [];
+  function pdfClearSearch(resetCache){
+    pdfSearch.token++; pdfSearch.term=''; pdfSearch.hits=[]; pdfSearch.gi=-1; pdfSearch.scrollPending=false;
+    if(resetCache) pdfSearch.cache={};
+    var i=document.getElementById('pdfSearchInput'); if(i) i.value='';
+    var inf=document.getElementById('pdfSearchInfo'); if(inf) inf.textContent='';
+    var l=document.getElementById('pdfHlLayer'); if(l) l.innerHTML='';
+  }
+  async function pdfItemStrs(doc, n){
+    var pg = await doc.getPage(n), tc = await pg.getTextContent();
+    return tc.items.filter(function(it){ return it.str !== undefined; }).map(function(it){ return it.str; });
+  }
+  async function pdfDoSearch(){
+    var inp = document.getElementById('pdfSearchInput'), info = document.getElementById('pdfSearchInfo');
+    var term = (inp.value || '').trim().toLowerCase();
+    if(!pdfDoc) return;
+    pdfSearch.token++; var tk = pdfSearch.token, doc = pdfDoc;
+    if(!term){ pdfClearSearch(false); return; }
+    inp.blur();
+    pdfSearch.term = term; pdfSearch.hits = []; pdfSearch.gi = -1;
+    var l=document.getElementById('pdfHlLayer'); if(l) l.innerHTML='';
+    var N = pdfTotPages;
+    for(var start=1; start<=N; start+=8){
+      var batch=[]; for(var i=start; i<Math.min(N+1,start+8); i++) batch.push(i);
+      var res = await Promise.all(batch.map(async function(n){
+        if(!pdfSearch.cache[n]) pdfSearch.cache[n] = await pdfItemStrs(doc, n);
+        return [n, pdfSearch.cache[n]];
+      }));
+      if(tk !== pdfSearch.token || doc !== pdfDoc) return;
+      res.forEach(function(r){
+        var k=0; r[1].forEach(function(str){
+          var low=str.toLowerCase(), idx=low.indexOf(term);
+          while(idx>=0){ pdfSearch.hits.push({p:r[0], k:k++}); idx=low.indexOf(term, idx+term.length); }
+        });
+      });
+      info.textContent = '…' + Math.min(N, start+7) + '/' + N;
+    }
+    if(!pdfSearch.hits.length){ info.textContent = '0'; return; }
+    var gi = 0;
+    for(var j=0; j<pdfSearch.hits.length; j++){ if(pdfSearch.hits[j].p >= pdfCurPage){ gi = j; break; } }
+    pdfGoHit(gi);
+  }
+  function pdfGoHit(gi){
+    var n = pdfSearch.hits.length; if(!n) return;
+    gi = (gi % n + n) % n; pdfSearch.gi = gi;
+    document.getElementById('pdfSearchInfo').textContent = (gi+1) + '/' + n;
+    var h = pdfSearch.hits[gi];
+    if(h.p !== pdfCurPage){ pdfSearch.scrollPending = true; renderPdfPage(h.p); }
+    else pdfApplyHighlights(true);
+  }
+  function pdfHitStep(d){ if(pdfSearch.hits.length) pdfGoHit(pdfSearch.gi + d); }
+  function pdfApplyHighlights(doScroll){
+    var layer = document.getElementById('pdfHlLayer'), wrapper = document.getElementById('pdfPageWrapper');
+    if(!layer || !wrapper) return;
+    layer.innerHTML = '';
+    var term = pdfSearch.term; if(!term) return;
+    var wr = wrapper.getBoundingClientRect(), sc = wr.width / (wrapper.offsetWidth || 1) || 1;
+    var cur = pdfSearch.hits[pdfSearch.gi], curK = (cur && cur.p === pdfCurPage) ? cur.k : -1, k = 0, curEl = null;
+    for(var i=0; i<pdfCurDivs.length; i++){
+      var low = (pdfCurStrs[i] || '').toLowerCase(), idx = low.indexOf(term);
+      while(idx >= 0){
+        var node = pdfCurDivs[i].firstChild;
+        if(node && node.nodeType === 3){
+          try{
+            var rg = document.createRange(); rg.setStart(node, idx); rg.setEnd(node, Math.min(node.length, idx + term.length));
+            var rc = rg.getBoundingClientRect();
+            if(rc.width > 0){
+              var el = document.createElement('div'); el.className = 'pdf-hl' + (k === curK ? ' cur' : '');
+              el.style.left = ((rc.left - wr.left)/sc) + 'px'; el.style.top = ((rc.top - wr.top)/sc) + 'px';
+              el.style.width = (rc.width/sc) + 'px'; el.style.height = (rc.height/sc) + 'px';
+              layer.appendChild(el); if(k === curK) curEl = el;
+            }
+          }catch(e){}
+        }
+        k++; idx = low.indexOf(term, idx + term.length);
+      }
+    }
+    if(doScroll && curEl){
+      var c = document.getElementById('pdfContainer'), cr = c.getBoundingClientRect(), er = curEl.getBoundingClientRect();
+      if(er.top < cr.top + 20 || er.bottom > cr.bottom - 20) c.scrollTop += (er.top - cr.top) - cr.height/3;
+      if(er.left < cr.left || er.right > cr.right) c.scrollLeft += (er.left - cr.left) - cr.width/4;
+    }
+  }
   function pdfPrevPage(){ if(pdfCurPage > 1) renderPdfPage(pdfCurPage - 1); }
   function pdfNextPage(){ if(pdfCurPage < pdfTotPages) renderPdfPage(pdfCurPage + 1); }
 
   function closePdf(){
     if(!pdfScreenOpen) return;
-    pdfScreenOpen = false;
+    pdfScreenOpen = false; pdfClearSearch(true);
     document.getElementById('pdfScreen').classList.remove('visible'); document.body.style.overflow='';
     document.querySelector('.header').style.display = '';
     document.getElementById('breadcrumb').style.display = '';
@@ -1323,7 +1432,12 @@
 
           <div class="cols">
             <div>
-              <div class="v-title current">v32 <span class="date">(24/10)</span></div>
+              <div class="v-title current">v33 <span class="date">(24/10)</span></div>
+              <div class="v-body">
+                • <b>Cerca nel PDF</b>: barra in basso, risultati evidenziati, frecce ▲▼ per scorrere le occorrenze (anche tra pagine diverse)
+              </div>
+
+              <div class="v-title">v32 <span class="date">(24/10)</span></div>
               <div class="v-body">
                 • <b>PDF a tutto schermo</b>: margini bianchi ritagliati in automatico, barra sottile, tasti ‹ › sovrapposti, zoom a due dita e doppio tocco<br>
                 • <b>Fix Ricambi per braccio</b> (TH450A/TH550A/THP550, THL, SR-HC, TH180): ora apre la pagina giusta<br>
@@ -1405,7 +1519,7 @@
   });
 </script>
 <div class="app-footer">
-  <span class="ver" onclick="showAbout()" style="cursor:pointer" title="Info e cronologia versioni">v32 &nbsp;ⓘ</span>
+  <span class="ver" onclick="showAbout()" style="cursor:pointer" title="Info e cronologia versioni">v33 &nbsp;ⓘ</span>
   <span class="logo"><span class="dot"></span>TR/software</span>
 </div>
 
