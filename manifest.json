@@ -1,15 +1,17 @@
 {
+  "id": "/shibaura-scara/",
   "name": "Shibaura SCARA Alarm Diagnostic",
-  "short_name": "SCARA Alarm",
+  "short_name": "Shibaura SCARA",
   "description": "Diagnostica allarmi robot SCARA Toshiba/Shibaura",
-  "start_url": "./index.html",
-  "scope": "./",
+  "start_url": "/shibaura-scara/index.html",
+  "scope": "/shibaura-scara/",
   "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#eef0f5",
+  "orientation": "any",
+  "background_color": "#1a1a2e",
   "theme_color": "#eef0f5",
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }
