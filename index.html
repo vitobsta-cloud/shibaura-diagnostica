@@ -171,7 +171,24 @@
         .pdf-spinner { width: 42px; height: 42px; border: 3px solid #e9ecef; border-top-color: #e94560; border-radius: 50%; animation: pdfsp 1s linear infinite; margin: 0 auto 14px; }
         @keyframes pdfsp { to { transform: rotate(360deg); } }
         .pdf-error { background: #fff0f3; border-left: 4px solid #e94560; padding: 14px; border-radius: 8px; color: #c73652; font-size: 0.9rem; }
-    </style>
+    
+        /* ===== PDF a tutto schermo ===== */
+        #pdfScreen { display:none; position:fixed; inset:0; z-index:2000; background:#4a4d52; flex-direction:column; }
+        #pdfScreen.visible { display:flex; }
+        .pdf-topbar { flex:0 0 auto; display:flex; align-items:center; gap:10px; background:#1a1a2e; color:#fff; padding:6px 8px 6px 14px; padding-top:max(6px, env(safe-area-inset-top)); min-height:44px; }
+        .pdf-topbar .pdf-title { flex:1; font-size:.9rem; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .pdf-pageind { font-size:.82rem; font-weight:700; background:rgba(255,255,255,.14); padding:5px 12px; border-radius:14px; white-space:nowrap; }
+        .pdf-topbar .pdf-close { font-size:1.3rem; padding:6px 12px; }
+        #pdfScreen .pdf-container { flex:1 1 auto; min-height:0; padding:0; margin:0; background:transparent; border-radius:0; overflow:auto; -webkit-overflow-scrolling:touch; touch-action:pan-x pan-y; text-align:left; overscroll-behavior:contain; display:flex; }
+        .pdf-sizer { position:relative; overflow:hidden; margin:auto; flex:0 0 auto; }
+        #pdfScreen .pdf-page-wrapper { position:absolute; left:0; top:0; display:block; transform-origin:0 0; }
+        #pdfScreen #pdfCanvas { box-shadow:none; border-radius:0; max-width:none; margin:0; }
+        .pdf-fab { position:fixed; bottom:calc(22px + env(safe-area-inset-bottom)); width:58px; height:58px; border-radius:50%; border:none; background:rgba(26,26,46,.80); color:#fff; font-size:2.2rem; line-height:1; padding:0 0 4px; box-shadow:0 4px 14px rgba(0,0,0,.4); z-index:2100; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+        .pdf-fab.prev { left:16px; }
+        .pdf-fab.next { right:16px; }
+        .pdf-fab:active { background:rgba(233,69,96,.9); }
+        .pdf-fab:disabled { opacity:.25; }
+</style>
 </head>
 <body>
 <div id="gateWrap" style="display:none;position:fixed;inset:0;z-index:99999;background:#1a1a2e;align-items:center;justify-content:center;padding:20px;font-family:system-ui,sans-serif">
@@ -278,24 +295,23 @@
       <div id="resultArea"><div class="no-result">Inserisci un codice e premi Cerca</div></div>
     </div>
 
-    <!-- SCHERMATA PDF -->
+    <!-- SCHERMATA PDF (a tutto schermo) -->
     <div id="pdfScreen">
-      <div class="pdf-header">
+      <div class="pdf-topbar">
         <div class="pdf-title" id="pdfTitle">—</div>
+        <div class="pdf-pageind"><span id="pdfCurPage">1</span> / <span id="pdfTotPage">?</span></div>
         <button class="pdf-close" onclick="closePdf()" title="Chiudi PDF">✕</button>
       </div>
-      <div class="pdf-nav">
-        <button class="pdf-nav-btn" id="pdfPrev" onclick="pdfPrevPage()">‹ Prec.</button>
-        <div class="pdf-page-info">Pagina <span id="pdfCurPage">1</span> di <span id="pdfTotPage">?</span></div>
-        <button class="pdf-nav-btn" id="pdfNext" onclick="pdfNextPage()">Succ. ›</button>
-      </div>
       <div class="pdf-container" id="pdfContainer">
-        <div class="pdf-page-wrapper" id="pdfPageWrapper">
-          <canvas id="pdfCanvas"></canvas>
-          <div class="textLayer" id="pdfTextLayer"></div>
+        <div class="pdf-sizer" id="pdfSizer">
+          <div class="pdf-page-wrapper" id="pdfPageWrapper">
+            <canvas id="pdfCanvas"></canvas>
+            <div class="textLayer" id="pdfTextLayer"></div>
+          </div>
         </div>
       </div>
-      <div class="pdf-hint" id="pdfHint">🤏 Pizzica per ingrandire · doppio tocco per zoom · ‹ › per sfogliare</div>
+      <button class="pdf-fab prev" id="pdfPrev" onclick="pdfPrevPage()" aria-label="Pagina precedente">‹</button>
+      <button class="pdf-fab next" id="pdfNext" onclick="pdfNextPage()" aria-label="Pagina successiva">›</button>
     </div>
   </div>
 </div>
@@ -564,15 +580,16 @@
     document.getElementById('ctrlScreen').classList.remove('visible');
     document.getElementById('armScreen').classList.remove('visible');
     document.getElementById('searchArea').classList.remove('visible');
-    // Mostra la sezione PDF
-    document.getElementById('pdfScreen').classList.add('visible');
+    // Mostra la sezione PDF a tutto schermo
+    var _ps=document.getElementById('pdfScreen'); if(_ps.parentNode!==document.body) document.body.appendChild(_ps);
+    _ps.classList.add('visible'); document.body.style.overflow='hidden';
     // Nasconde header e breadcrumb per dare più spazio
     document.querySelector('.header').style.display = 'none';
     document.getElementById('breadcrumb').style.display = 'none';
     pdfScreenOpen = true;
     window.scrollTo(0, 0);
 
-    document.getElementById('pdfTitle').textContent = pdfFilename + ' · pag. ' + pdfCurPage;
+    document.getElementById('pdfTitle').textContent = pdfFilename;
     document.getElementById('pdfCurPage').textContent = pdfCurPage;
     document.getElementById('pdfTotPage').textContent = '?';
     document.getElementById('pdfPrev').disabled = true;
@@ -591,7 +608,7 @@
       pdfTotPages = pdfDoc.numPages;
       if(pdfCurPage > pdfTotPages) pdfCurPage = 1;
       document.getElementById('pdfTotPage').textContent = pdfTotPages;
-      container.innerHTML = '<div class="pdf-page-wrapper" id="pdfPageWrapper"><canvas id="pdfCanvas"></canvas><div class="textLayer" id="pdfTextLayer"></div></div>';
+      container.innerHTML = '<div class="pdf-sizer" id="pdfSizer"><div class="pdf-page-wrapper" id="pdfPageWrapper"><canvas id="pdfCanvas"></canvas><div class="textLayer" id="pdfTextLayer"></div></div></div>';
       await renderPdfPage(pdfCurPage);
     } catch(err){
       console.error('PDF error:', err);
@@ -606,7 +623,7 @@
     pdfCurPage = num;
 
     document.getElementById('pdfCurPage').textContent = num;
-    document.getElementById('pdfTitle').textContent = pdfFilename + ' · pag. ' + num;
+    document.getElementById('pdfTitle').textContent = pdfFilename;
     document.getElementById('pdfPrev').disabled = num <= 1;
     document.getElementById('pdfNext').disabled = num >= pdfTotPages;
 
@@ -616,7 +633,7 @@
       const ctx = canvas.getContext('2d');
 
       const container = document.getElementById('pdfContainer');
-      const cssW = Math.max(200, container.clientWidth - 20);
+      const cssW = Math.max(200, container.clientWidth);
       const vp1 = page.getViewport({scale: 1});
       const cssScale = cssW / vp1.width;
 
@@ -637,6 +654,11 @@
         wrapper.style.height = cssH + 'px';
         wrapper.style.setProperty('--scale-factor', cssScale);
       }
+      pdfBaseW = cssW; pdfBaseH = cssH;
+      var _pageChanged = (pdfLastPage !== num); pdfLastPage = num;
+      if(_pageChanged || !pdfZoom) pdfZoom = 1;
+      pdfApplyZoom(pdfZoom);
+      if(_pageChanged){ container.scrollTop = 0; container.scrollLeft = 0; }
 
       await page.render({ canvasContext: ctx, viewport: vp }).promise;
 
@@ -661,8 +683,7 @@
         console.warn('text layer error:', txErr);
       }
 
-      const containerTop = container.getBoundingClientRect().top + window.scrollY - 100;
-      window.scrollTo({ top: Math.max(0, containerTop), behavior: 'auto' });
+
     } catch(err){
       if(err && err.name !== 'RenderingCancelledException') console.error('render error:', err);
     } finally {
@@ -674,13 +695,61 @@
     }
   }
 
+
+  /* ===== Zoom interno al PDF (pizzico a due dita, doppio tocco, Ctrl+rotella) ===== */
+  var pdfZoom = 1, pdfBaseW = 0, pdfBaseH = 0, pdfLastPage = 0;
+  function pdfApplyZoom(z){
+    pdfZoom = z;
+    var sizer = document.getElementById('pdfSizer'), w = document.getElementById('pdfPageWrapper');
+    if(!sizer || !w) return;
+    sizer.style.width  = (pdfBaseW * z) + 'px';
+    sizer.style.height = (pdfBaseH * z) + 'px';
+    w.style.transform = 'scale(' + z + ')';
+  }
+  function pdfZoomAt(newZ, fx, fy){   // fx, fy: punto fisso in coordinate del contenitore
+    var c = document.getElementById('pdfContainer'); if(!c) return;
+    newZ = Math.max(1, Math.min(5, newZ));
+    var cx = (c.scrollLeft + fx) / pdfZoom, cy = (c.scrollTop + fy) / pdfZoom;
+    pdfApplyZoom(newZ);
+    c.scrollLeft = cx * newZ - fx; c.scrollTop = cy * newZ - fy;
+  }
+  (function(){
+    var c = document.getElementById('pdfScreen') ? document.getElementById('pdfContainer') : null;
+    function init(){
+      c = document.getElementById('pdfContainer'); if(!c) return;
+      var d0 = 0, z0 = 1, pinch = false, lastTap = 0, lastX = 0, lastY = 0;
+      function mid(e){ var r=c.getBoundingClientRect(); return {x:(e.touches[0].clientX+e.touches[1].clientX)/2 - r.left, y:(e.touches[0].clientY+e.touches[1].clientY)/2 - r.top}; }
+      function dist(e){ return Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY); }
+      c.addEventListener('touchstart', function(e){
+        if(e.touches.length === 2){ pinch = true; d0 = dist(e); z0 = pdfZoom; }
+      }, {passive:true});
+      c.addEventListener('touchmove', function(e){
+        if(pinch && e.touches.length === 2){ e.preventDefault(); var m = mid(e); pdfZoomAt(z0 * dist(e) / d0, m.x, m.y); }
+      }, {passive:false});
+      c.addEventListener('touchend', function(e){
+        if(pinch){ if(e.touches.length < 2) pinch = false; return; }
+        if(e.changedTouches.length !== 1 || e.touches.length) return;
+        var t = e.changedTouches[0], now = Date.now(), r = c.getBoundingClientRect();
+        if(now - lastTap < 320 && Math.hypot(t.clientX-lastX, t.clientY-lastY) < 30){
+          e.preventDefault(); lastTap = 0;
+          pdfZoomAt(pdfZoom > 1.3 ? 1 : 2.5, t.clientX - r.left, t.clientY - r.top);
+        } else { lastTap = now; lastX = t.clientX; lastY = t.clientY; }
+      }, {passive:false});
+      c.addEventListener('wheel', function(e){
+        if(!e.ctrlKey) return; e.preventDefault();
+        var r = c.getBoundingClientRect();
+        pdfZoomAt(pdfZoom * (e.deltaY < 0 ? 1.15 : 1/1.15), e.clientX - r.left, e.clientY - r.top);
+      }, {passive:false});
+    }
+    if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+  })();
   function pdfPrevPage(){ if(pdfCurPage > 1) renderPdfPage(pdfCurPage - 1); }
   function pdfNextPage(){ if(pdfCurPage < pdfTotPages) renderPdfPage(pdfCurPage + 1); }
 
   function closePdf(){
     if(!pdfScreenOpen) return;
     pdfScreenOpen = false;
-    document.getElementById('pdfScreen').classList.remove('visible');
+    document.getElementById('pdfScreen').classList.remove('visible'); document.body.style.overflow='';
     document.querySelector('.header').style.display = '';
     document.getElementById('breadcrumb').style.display = '';
 
@@ -1221,22 +1290,30 @@
 
           <div class="cols">
             <div>
-              <div class="v-title current">v31 <span class="date">(28/07)</span></div>
+              <div class="v-title current">v32 <span class="date">(24/10)</span></div>
+              <div class="v-body">
+                • <b>PDF a tutto schermo</b>: barra sottile, tasti ‹ › sovrapposti alla pagina, zoom a due dita e doppio tocco<br>
+                • <b>Fix Ricambi per braccio</b> (TH450A/TH550A/THP550, THL, SR-HC, TH180): ora apre la pagina giusta<br>
+                • Nuovo controller <b>SR7000</b> nella serie SR<br>
+                • Versione web installabile (PWA)
+              </div>
+
+              <div class="v-title">v31 <span class="date">(28/07)</span></div>
               <div class="v-body">
                 • <b>Nuova serie TS5000</b>: controller TS5000-SS/-MS/-EMS + bracci THE400/600/800/1000, THL500/600/700<br>
                 • 479 nuovi codici allarme (STEA1165)<br>
                 • Integrati 5 manuali TS2000/TS2100 mancanti (SCOL, TCR5L, TCR10LA)<br>
                 • Tasto ℹ️ Info/Cronologia versioni nel footer
               </div>
+            </div>
 
+            <div>
               <div class="v-title">v30 <span class="date">(02/07)</span></div>
               <div class="v-body">
                 • Fix selezione testo PDF: font-family non più forzato nel text-layer<br>
                 • CSS text-layer allineato alla spec pdf.js ufficiale
               </div>
-            </div>
 
-            <div>
               <div class="v-title">v29 <span class="date">(02/07)</span></div>
               <div class="v-body">
                 • <b>Selezione testo copiabile</b> nei PDF: long-press → Copia
@@ -1295,7 +1372,7 @@
   });
 </script>
 <div class="app-footer">
-  <span class="ver" onclick="showAbout()" style="cursor:pointer" title="Info e cronologia versioni">v31 &nbsp;ⓘ</span>
+  <span class="ver" onclick="showAbout()" style="cursor:pointer" title="Info e cronologia versioni">v32 &nbsp;ⓘ</span>
   <span class="logo"><span class="dot"></span>TR/software</span>
 </div>
 
