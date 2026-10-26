@@ -402,7 +402,9 @@
       'TS3000 / 3000E':  { alarm:'STE80723', lang:'STI80721', plc:'STE80737', arms:{ 'THL300':'STE85357','THL400':'STE85357','THL500':'STE85357','THL600':'STE85357','THL700':'STE85357','THL800':'STE85357','THL1000':'STE85357','THL1200':'STE85357' }},
       'TS5000-SS': { alarm:'STEA1165', lang:'STEA1163', plc:'STEA1168', arms:{ 'THL500':'STEA1234','THL600':'STEA1234','THL700':'STEA1234' } },
     }},
-    THE: { label:'THE', cls:'the', desc:'Serie THE (TS5000)', controllers:{
+    THE: { label:'THE', cls:'the', desc:'Serie THE (TS5000 / TSL3000)', controllers:{
+      'TSL3000':  { alarm:'STE80723', lang:'STE80721', plc:'STE85368', arms:{ 'THE400':'STEA1105' } },
+      'TSL3000E': { alarm:'STE80723', lang:'STE80721', plc:'STE85368', arms:{ 'THE400':'STEA1105' } },
       'TS5000-SS': { alarm:'STEA1165', lang:'STEA1163', plc:'STEA1168', arms:{ 'THE400':'STEA1213' } },
       'TS5000': { alarm:'STEA1165', lang:'STEA1163', plc:'STEA1168', arms:{ 'THE600':'STEA1171' } },
       'TS5000-MS': { alarm:'STEA1165', lang:'STEA1163', plc:'STEA1168', arms:{ 'THE800':'STA1245','THE1000':'STA1245' } },
@@ -413,12 +415,14 @@
   /* Manuali generici per famiglia controller (per la pagina "Tutti i manuali") */
   const CTRL_DOCS = {
     'SR7000': [['I/O cables (SR7000/TS2000/TS2100)','STE71389'],['Trasporto e installazione SR','STE73822']],
-    'TS2000': [['Startup','STE71366'],['Robot Language (SCOL)','STE71284'],['Interface','STE71367'],['Communication','STE71289'],['Simple PLC','STE71368'],['Safety — SR series','STE71373'],['Safety — TH series','STE79091'],['Safety — TH series','STE73883'],['Alarm Manual TS1000/TS2000','STE71283'],['Trasporto SR','STE71372'],['Trasporto TH450A/550A','STE80899'],['Trasporto TH650A','STE80742'],['Trasporto TH850A/1050A','STE80886'],['Trasporto TCR5L','STE80897'],['Manutenzione TCR5L','STE80898'],['Trasporto SR FOUP','STE73868'],['Trasporto SR Cassette','STE73871'],['Trasporto SR Wafer','STE73873'],['Clean spec TH','STE71293']],
+    'TS2000': [['Startup','STE71366'],['Robot Language (SCOL)','STE71284'],['Interface','STE71367'],['Communication','STE71289'],['Simple PLC','STE71368'],['Safety — SR series','STE71373'],['Safety — TH series','STE79091'],['Safety — TH series','STE73883'],['Alarm Manual TS1000/TS2000','STE71283'],['Trasporto SR','STE71372'],['Trasporto TH450A/550A','STE80899'],['Trasporto TH650A','STE80742'],['Trasporto TH850A/1050A','STE80886'],['Trasporto TCR5L','STE80897'],['Manutenzione TCR5L','STE80898'],['Trasporto SR FOUP','STE73868'],['Trasporto SR Cassette','STE73871'],['Trasporto SR Wafer','STE73873'],['Clean spec TH','STE71293'],['Installazione e trasporto (TH/SR)','STE71286'],['Manutenzione (TH/SR)','STE71287'],['Sicurezza (TH/SR)','STE71288'],['Cavi I/O','STE71291'],['Field Bus Slave','STE71354'],['Ethernet Interface','STE73834'],['Sincronizzazione conveyor','STE73828'],['Sincronizzazione conveyor ad arco','STE73829']],
     'TS2000L': [['Startup','STE71366'],['Robot Language (SCOL)','STE71284'],['Interface','STE71367'],['Communication','STE71289'],['Simple PLC','STE71368'],['Alarm Manual TS1000/TS2000','STE71283']],
-    'TS2100': [['Startup','STE71366'],['Robot Language (SCOL)','STE80721'],['Interface','STE71367'],['Communication','STE71289'],['Simple PLC','STE71368'],['Safety — TH series','STE79091'],['Safety — TH series','STE73883'],['Alarm Manual TS1000/TS2000','STE71283'],['Trasporto TH650A','STE79087'],['Trasporto TH850A/1050A','STE79095'],['Trasporto SR-404/405HC','STE79099'],['Trasporto TCR10LA','STE80856'],['Manutenzione TCR10LA','STE80857'],['Dust-proof TH650A-IP','STE80747'],['Dust-proof TH850A/1050A-IP','STE80765'],['Clean TH650A-CRB','STE80749'],['Ceiling type TH650A-T/TH1050A-T','STE80716']],
-    'TS3000': [["Operator's Manual",'STE80720'],["Operator's Manual TP3000",'STE85412'],['Linguaggio robot SCOL (italiano)','STI80721'],['Interface','STE80729'],['Communication','STE80722'],['Simple PLC','STE80737'],['Fieldbus Slave','STE80756'],['User Parameter','STE80725'],['Safety — TH/THL','STE80755'],['Alarm Manual','STE80723'],['Conveyor Sync','STE85304'],['Vision + Conveyor Sync','STE80866'],['Trasporto THP550','STE80772'],['Trasporto TH450A/550A','STE80808'],['Trasporto TH180/250A/350A','STE85389'],['Trasporto SR-HC','STE80884'],['Trasporto THL','STE85356'],['Safety THL','STE85358'],['Dust-proof THP550/TH-IP','STE80783'],['Clean TH/THP-CRB','STE80872'],['Ceiling type TH/THP-T','STE80870'],['Dust-proof THL-IP6X','STE85494'],['Clean THL','STE85442'],['THL Specifications','STE85431']],
-    'TS3100': [["Operator's Manual",'STE80720'],['Linguaggio robot SCOL (italiano)','STI80721'],['Interface','STE80729'],['Communication','STE80722'],['Simple PLC','STE80737'],['Fieldbus Slave','STE80756'],['User Parameter','STE80725'],['Safety — TH','STE80755'],['Alarm Manual','STE80723'],['Trasporto TH650A','STE85305'],['Trasporto TH850A/1050A/1200A','STE80753'],['Trasporto THP700','STE85320'],['Trasporto SR-HC','STE80884'],['Dust-proof THP700-IP','STE85336'],['Clean THP700-CRB','STE85337']],
+    'TS2100': [['Startup','STE71366'],['Robot Language (SCOL)','STE80721'],['Interface','STE71367'],['Communication','STE71289'],['Simple PLC','STE71368'],['Safety — TH series','STE79091'],['Safety — TH series','STE73883'],['Alarm Manual TS1000/TS2000','STE71283'],['Trasporto TH650A','STE79087'],['Trasporto TH850A/1050A','STE79095'],['Trasporto SR-404/405HC','STE79099'],['Trasporto TCR10LA','STE80856'],['Manutenzione TCR10LA','STE80857'],['Dust-proof TH650A-IP','STE80747'],['Dust-proof TH850A/1050A-IP','STE80765'],['Clean TH650A-CRB','STE80749'],['Ceiling type TH650A-T/TH1050A-T','STE80716'],['Ethernet Interface','STE73834']],
+    'TS3000': [["Operator's Manual",'STE80720'],["Operator's Manual TP3000",'STE85412'],['Linguaggio robot SCOL (italiano)','STI80721'],['Interface','STE80729'],['Communication','STE80722'],['Simple PLC','STE80737'],['Fieldbus Slave','STE80756'],['User Parameter','STE80725'],['Safety — TH/THL','STE80755'],['Alarm Manual','STE80723'],['Conveyor Sync','STE85304'],['Vision + Conveyor Sync','STE80866'],['Trasporto THP550','STE80772'],['Trasporto TH450A/550A','STE80808'],['Trasporto TH180/250A/350A','STE85389'],['Trasporto SR-HC','STE80884'],['Trasporto THL','STE85356'],['Safety THL','STE85358'],['Dust-proof THP550/TH-IP','STE80783'],['Clean TH/THP-CRB','STE80872'],['Ceiling type TH/THP-T','STE80870'],['Dust-proof THL-IP6X','STE85494'],['Clean THL','STE85442'],['THL Specifications','STE85431'],['Cavi I/O','STE80760'],['Sensor-less Compliance Control','STE80781'],['Unità TS3SFB (sicurezza)','STE80862'],['Differenze TH450/550 e TH450A/550A','STE80807']],
+    'TS3100': [["Operator's Manual",'STE80720'],['Linguaggio robot SCOL (italiano)','STI80721'],['Interface','STE80729'],['Communication','STE80722'],['Simple PLC','STE80737'],['Fieldbus Slave','STE80756'],['User Parameter','STE80725'],['Safety — TH','STE80755'],['Alarm Manual','STE80723'],['Trasporto TH650A','STE85305'],['Trasporto TH850A/1050A/1200A','STE80753'],['Trasporto THP700','STE85320'],['Trasporto SR-HC','STE80884'],['Dust-proof THP700-IP','STE85336'],['Clean THP700-CRB','STE85337'],['Trasporto TCR10LA','STE80858'],['Cavi I/O','STE80760'],['Sensor-less Compliance Control','STE80781'],['Unità TS3SFB (sicurezza)','STE80862'],['Manutenzione TCR10LA','STE80859'],['Asse traslante TCR10LA','STE80860']],
     'TS3000 / TS3100': [["Operator's Manual",'STE80720'],['Linguaggio robot SCOL (italiano)','STI80721'],['Interface','STE80729'],['Communication','STE80722'],['Simple PLC','STE80737'],['Fieldbus Slave','STE80756'],['User Parameter','STE80725'],['Safety — TH/THL','STE80755'],['Alarm Manual','STE80723'],['Trasporto SR-HC','STE80884']],
+    'TSL3000': [["Operator's Manual",'STE80720'],["Operator's Manual TS3000/TSL3000",'STE85412'],['Robot Language (SCOL)','STE80721'],['Communication','STE80722'],['Simple PLC (TSL)','STE85368'],['Fieldbus Slave','STE80756'],['User Parameter','STE80725'],['Alarm Manual','STE80723'],['TP5100 Operation Manual','STEA1259'],['Robot — THE400','STEA1105'],['Safety — THE series','STEA1112'],['Dust-proof THE400','STEA1200'],['Ceiling Mount THE400','STEA1131'],['Interface (TSL)','STE85364'],['Controller Manual TSL3000 (THL/THE)','STEA1107']],
+    'TSL3000E': [["Operator's Manual",'STE80720'],["Operator's Manual TS3000/TSL3000",'STE85412'],['Robot Language (SCOL)','STE80721'],['Communication','STE80722'],['Simple PLC (TSL)','STE85368'],['Fieldbus Slave','STE80756'],['User Parameter','STE80725'],['Alarm Manual','STE80723'],['TP5100 Operation Manual','STEA1259'],['Robot — THE400','STEA1105'],['Safety — THE series','STEA1112'],['Dust-proof THE400','STEA1200'],['Ceiling Mount THE400','STEA1131'],['Interface (TSL3000E)','STE85457'],['Vision + Conveyor','STE80866'],['Controller Manual TSL3000E (THL/THE)','STEA1124']],
     'TSL3000 / 3000E': [["Operator's Manual",'STE80720'],['Robot Language (SCOL)','STE80721'],['Interface (TSL)','STE85364'],['Interface (TSL3000E)','STE85457'],['Simple PLC (TSL)','STE85368'],['Safety — THL','STE85358'],['Alarm Manual','STE80723'],['Trasporto THL','STE85356'],['Clean THL','STE85442'],['Dust-proof THL-IP6X','STE85494'],['THL Specifications','STE85431'],['Ceiling type THL','STEA1131']],
     'TS3000 / 3000E': [["Operator's Manual",'STE80720'],['Linguaggio robot SCOL (italiano)','STI80721'],['Interface','STE80729'],['Communication','STE80722'],['Simple PLC','STE80737'],['Fieldbus Slave','STE80756'],['Safety — TH/THL','STE80755'],['Alarm Manual','STE80723'],['Trasporto THL','STE85356'],['Safety THL','STE85358'],['Clean THL','STE85442']],
     'TS5000-SS': [["Startup","STEA1237"],["Interface 🇯🇵","STA1238"],["TP5000 Operator's Manual","STEA1162"],["Robot Language (SCOL2)","STEA1163"],["Communication Manual","STEA1164"],["Alarm Manual","STEA1165"],["Parameter Manual","STEA1166"],["Safety — THE400","STEA1239"],["Safety — THL","STEA1235"],["Robot — THE400","STEA1213"],["Robot — THL500/600/700","STEA1234"],["Dust-Proof THE400","STEA1200"],["Ceiling Mount THE400","STEA1131"],["TCmini (Built-in PLC)","STEA1168"],["TP1000 Operator's Manual","STEA1169"],["Fieldbus Slave Function","STEA1190"],["TS5000 Communication DLL 🇯🇵","STA1205"],["Conveyor Synchronization 🇯🇵","STA5572"]],
@@ -504,7 +508,7 @@
     'TSL3100E':'i17',
   };
   function getArmImg(a){ const k=ARM_IMG[a]; return k?IMG_DATA[k]:null; }
-  function getCtrlImg(c){ for(const[n,k] of Object.entries(ARM_IMG)){ if(c.includes(n)) return IMG_DATA[k]; } return null; }
+  function getCtrlImg(c){ const es=Object.entries(ARM_IMG).sort((x,y)=>y[0].length-x[0].length); for(const[n,k] of es){ if(c.includes(n)) return IMG_DATA[k]; } return null; }
 
   /* ════════ Codici Errore Encoder (Err-Dff) ════════ */
   const ENCODER_ERRORS = [
@@ -544,6 +548,13 @@
     'STE80700': {robot:38, cables:null, controller:null},
     'STE73825': {robot:59, cables:61, controller:64},
     'STE71219': {robot:6, cables:null, controller:null},
+    'STE80857': {robot:58, cables:null, controller:59},
+    'STE80898': {robot:56, cables:null, controller:57},
+    'STEA1105': {robot:183, cables:null, controller:null},
+    'STEA1213': {robot:176, cables:null, controller:null},
+    'STEA1211': {robot:187, cables:null, controller:null},
+    'STEA1234': {robot:193, cables:null, controller:null},
+    'STEA1171': {robot:236, cables:null, controller:null},
   };
 
   
@@ -565,6 +576,18 @@
     let r = Object.assign({}, base);
     const o = ARM_PARTS_BY_ARM[man] && ARM_PARTS_BY_ARM[man][arm];
     if(o) r = Object.assign(r, o);
+    if(man==='STEA1105'){            /* THE400: ricambi controller nel manuale del controller (TSL3000 o TSL3000E) */
+      if(ctrl==='TSL3000E'){ r.controllerMan='STEA1124'; r.controller=64; }
+      else if(ctrl==='TSL3000'){ r.controllerMan='STEA1107'; r.controller=73; }
+    }
+    /* ricambi controller: nei manuali dei controller TS5000 (o pagine specifiche) */
+    if(man==='STEA1171'){ r.controllerMan='STEA1161'; r.controller=87; }
+    if(man==='STEA1213' || man==='STEA1234'){ r.controllerMan='STEA1237'; r.controller=94; }
+    if(man==='STEA1211'){ r.controllerMan='STA1223'; r.controller=84; }
+    if(man==='STE85321'){ r.controller=107; }
+    if(man==='STE80700'){ r.cables=39; r.controller = (ctrl==='TS2100') ? 41 : 40; }
+    if(man==='STE80857'){ r.robot=58; r.controller=59; }
+    if(man==='STE80898'){ r.robot=56; r.controller=57; }
     if(man==='STE85357'){            /* THL: pagina robot e controller dipendono da modello e controller */
       const n = parseInt((arm||'').replace(/\D/g,''),10) || 0;
       const grp = n<=400 ? 0 : (n<=700 ? 1 : 2);
@@ -1124,11 +1147,12 @@
       }
 
       if(p.controller){
-        h += `<div class="manual-item" onclick="openPdf('${curMaint}', ${p.controller})" style="border-left:4px solid #e65100;">
+        const cm = p.controllerMan || curMaint;
+        h += `<div class="manual-item" onclick="openPdf('${cm}', ${p.controller})" style="border-left:4px solid #e65100;">
           <div class="manual-icon plc">🎛️</div>
           <div class="manual-info">
             <div class="manual-title">Ricambi Controller</div>
-            <div class="manual-code">${curMaint}.pdf · pag. ${p.controller}</div>
+            <div class="manual-code">${cm}.pdf · pag. ${p.controller}${/^STA/.test(cm)?' · 🇯🇵 giapponese':''}</div>
           </div>
           <div class="manual-arrow">›</div>
         </div>`;
@@ -1452,10 +1476,34 @@
 
           <div class="cols">
             <div>
-              <div class="v-title current">v34 <span class="date">(26/10)</span></div>
+              <div class="v-title current">v39 <span class="date">(26/10)</span></div>
+              <div class="v-body">
+                • <b>Ricambi controller</b> per THE400/THE600/THL con TS5000, THP700, TCR5L, TCR10LA, SR wafer<br>
+                • Fix pagina ricambi controller TSL3000E
+              </div>
+
+              <div class="v-title">v38 <span class="date">(26/10)</span></div>
+              <div class="v-body">
+                • <b>Ricambi controller</b> per THE400 con TSL3000 e TSL3000E (apre il manuale del controller alla pagina giusta)
+              </div>
+
+              <div class="v-title">v37 <span class="date">(26/10)</span></div>
+              <div class="v-body">
+                • Fix immagine controllore: TSL3000E mostrava quella del TSL3000
+              </div>
+
+              <div class="v-title">v36 <span class="date">(26/10)</span></div>
+              <div class="v-body">
+                • <b>Lista Ricambi</b> ora anche per THE400, THE600, THE600-E e THL con TS5000/TSL3000
+              </div>
+
+              <div class="v-title">v35 <span class="date">(26/10)</span></div>
               <div class="v-body">
                 • <b>TS5000</b>: manuali in <b>inglese</b> al posto del giapponese (bracci THE400/600/800-E, THL, sicurezza, integrazione, controllore SS)<br>
                 • Nuovi: Safety e Integration <b>THE400-E</b><br>
+                • <b>THE400 con TSL3000 / TSL3000E</b> (nuovo)<br>
+                • TS3000/TS3100: cavi I/O, compliance control, unità TS3SFB, TCR10LA<br>
+                • TS2000: nuovi manuali installazione, manutenzione, sicurezza, cavi I/O, field bus, Ethernet, conveyor<br>
                 • 🇯🇵 = manuale ancora solo in giapponese<br>
                 • Nuova icona robot SCARA
               </div>
@@ -1549,7 +1597,7 @@
   });
 </script>
 <div class="app-footer">
-  <span class="ver" onclick="showAbout()" style="cursor:pointer" title="Info e cronologia versioni">v34 &nbsp;ⓘ</span>
+  <span class="ver" onclick="showAbout()" style="cursor:pointer" title="Info e cronologia versioni">v39 &nbsp;ⓘ</span>
   <span class="logo"><span class="dot"></span>TR/software</span>
 </div>
 
