@@ -200,6 +200,9 @@
         .pdf-hl-layer { position:absolute; inset:0; pointer-events:none; z-index:1; }
         .pdf-hl { position:absolute; background:rgba(255,214,0,.5); mix-blend-mode:multiply; border-radius:2px; }
         .pdf-hl.cur { background:rgba(255,120,0,.6); outline:2px solid #e94560; }
+
+        .pdf-zbtn { flex:0 0 auto; width:34px; height:28px; margin-right:6px; border:none; border-radius:14px; background:rgba(255,255,255,.18); color:#fff; font-size:1.2rem; line-height:1; padding:0; cursor:pointer; }
+        .pdf-zbtn:active { background:rgba(255,255,255,.4); }
 </style>
 </head>
 <body>
@@ -311,6 +314,8 @@
     <div id="pdfScreen">
       <div class="pdf-topbar">
         <div class="pdf-title" id="pdfTitle">—</div>
+        <button class="pdf-zbtn" onclick="pdfZoomBtn(1/1.3)" title="Rimpicciolisci" aria-label="Zoom meno">−</button>
+        <button class="pdf-zbtn" onclick="pdfZoomBtn(1.3)" title="Ingrandisci" aria-label="Zoom più">+</button>
         <div class="pdf-pageind"><span id="pdfCurPage">1</span> / <span id="pdfTotPage">?</span></div>
         <button class="pdf-close" onclick="closePdf()" title="Chiudi PDF">✕</button>
       </div>
@@ -384,24 +389,24 @@
           'SR FOUP transfer':'STE73869','SR Cassette transfer':'STE73872','SR Wafer transfer':'STE73874' }},
       'TS2000L': { alarm:null, lang:'STE71284', plc:'STE71368', arms:{ 'SR-1504HZ':'STE73825' }},
       'TS2100':  { alarm:null, lang:'STE80721', plc:'STE71368', arms:{ 'SR-404HC (wafer)':'STE80700','SR-405HC (wafer)':'STE80700' }},
-      'TS3000 / TS3100': { alarm:'STE80723', lang:'STE80721', plc:'STE80737', arms:{ 'SR-404HC':'STE80885','SR-405HC':'STE80885','SR-624HC':'STE80885' }},
+      'TS3000 / TS3100': { alarm:'STE80723', lang:'STI80721', plc:'STE80737', arms:{ 'SR-404HC':'STE80885','SR-405HC':'STE80885','SR-624HC':'STE80885' }},
     }},
     TH: { label:'TH', cls:'th', desc:'Serie TH / THP', controllers:{
       'TS2000': { alarm:null, lang:'STE71284', plc:'STE71368', arms:{ 'TH450A':'STE85300','TH550A':'STE85300','TH650A':'STE80743','TH850A':'STE80887','TH1050A':'STE80887','TCR5L (cleanroom)':'STE80898' }},
       'TS2100': { alarm:null, lang:'STE80721', plc:'STE71368', arms:{ 'TH650A':'STE79088','TH850A':'STE79096','TH1050A':'STE79096','TCR10LA (cleanroom)':'STE80857' }},
-      'TS3000': { alarm:'STE80723', lang:'STE80721', plc:'STE80737', arms:{ 'TH180':'STE85390','TH250A':'STE85390','TH350A':'STE85390','TH450A':'STE80773','TH550A':'STE80773','THP550':'STE80773' }},
-      'TS3100': { alarm:'STE80723', lang:'STE80721', plc:'STE80737', arms:{ 'TH650A':'STE85306','TH850A':'STE80754','TH1050A':'STE80754','TH1200A':'STE80754','THP700':'STE85321' }},
+      'TS3000': { alarm:'STE80723', lang:'STI80721', plc:'STE80737', arms:{ 'TH180':'STE85390','TH250A':'STE85390','TH350A':'STE85390','TH450A':'STE80773','TH550A':'STE80773','THP550':'STE80773' }},
+      'TS3100': { alarm:'STE80723', lang:'STI80721', plc:'STE80737', arms:{ 'TH650A':'STE85306','TH850A':'STE80754','TH1050A':'STE80754','TH1200A':'STE80754','THP700':'STE85321' }},
     }},
     THL: { label:'THL', cls:'thl', desc:'Serie THL', controllers:{
       'TSL3000 / 3000E': { alarm:'STE80723', lang:'STE80721', plc:'STE85368', arms:{ 'THL300':'STE85357','THL400':'STE85357','THL500':'STE85357','THL600':'STE85357','THL700':'STE85357','THL800':'STE85357','THL1000':'STE85357','THL1200':'STE85357' }},
-      'TS3000 / 3000E':  { alarm:'STE80723', lang:'STE80721', plc:'STE80737', arms:{ 'THL300':'STE85357','THL400':'STE85357','THL500':'STE85357','THL600':'STE85357','THL700':'STE85357','THL800':'STE85357','THL1000':'STE85357','THL1200':'STE85357' }},
-      'TS5000-SS': { alarm:'STEA1165', lang:'STEA1163', plc:'STEA1168', arms:{ 'THL500':'STA1234','THL600':'STA1234','THL700':'STA1234' } },
+      'TS3000 / 3000E':  { alarm:'STE80723', lang:'STI80721', plc:'STE80737', arms:{ 'THL300':'STE85357','THL400':'STE85357','THL500':'STE85357','THL600':'STE85357','THL700':'STE85357','THL800':'STE85357','THL1000':'STE85357','THL1200':'STE85357' }},
+      'TS5000-SS': { alarm:'STEA1165', lang:'STEA1163', plc:'STEA1168', arms:{ 'THL500':'STEA1234','THL600':'STEA1234','THL700':'STEA1234' } },
     }},
     THE: { label:'THE', cls:'the', desc:'Serie THE (TS5000)', controllers:{
-      'TS5000-SS': { alarm:'STEA1165', lang:'STEA1163', plc:'STEA1168', arms:{ 'THE400':'STA1213' } },
+      'TS5000-SS': { alarm:'STEA1165', lang:'STEA1163', plc:'STEA1168', arms:{ 'THE400':'STEA1213' } },
       'TS5000': { alarm:'STEA1165', lang:'STEA1163', plc:'STEA1168', arms:{ 'THE600':'STEA1171' } },
       'TS5000-MS': { alarm:'STEA1165', lang:'STEA1163', plc:'STEA1168', arms:{ 'THE800':'STA1245','THE1000':'STA1245' } },
-      'TS5000-EMS': { alarm:'STEA1165', lang:'STEA1163', plc:'STEA1168', arms:{ 'THE600-E':'STA1211','THE800-E':'STA1245','THE1000-E':'STA1245' } },
+      'TS5000-EMS': { alarm:'STEA1165', lang:'STEA1163', plc:'STEA1168', arms:{ 'THE600-E':'STEA1211','THE800-E':'STA1245','THE1000-E':'STA1245' } },
     }},
   };
 
@@ -411,15 +416,15 @@
     'TS2000': [['Startup','STE71366'],['Robot Language (SCOL)','STE71284'],['Interface','STE71367'],['Communication','STE71289'],['Simple PLC','STE71368'],['Safety — SR series','STE71373'],['Safety — TH series','STE79091'],['Safety — TH series','STE73883'],['Alarm Manual TS1000/TS2000','STE71283'],['Trasporto SR','STE71372'],['Trasporto TH450A/550A','STE80899'],['Trasporto TH650A','STE80742'],['Trasporto TH850A/1050A','STE80886'],['Trasporto TCR5L','STE80897'],['Manutenzione TCR5L','STE80898'],['Trasporto SR FOUP','STE73868'],['Trasporto SR Cassette','STE73871'],['Trasporto SR Wafer','STE73873'],['Clean spec TH','STE71293']],
     'TS2000L': [['Startup','STE71366'],['Robot Language (SCOL)','STE71284'],['Interface','STE71367'],['Communication','STE71289'],['Simple PLC','STE71368'],['Alarm Manual TS1000/TS2000','STE71283']],
     'TS2100': [['Startup','STE71366'],['Robot Language (SCOL)','STE80721'],['Interface','STE71367'],['Communication','STE71289'],['Simple PLC','STE71368'],['Safety — TH series','STE79091'],['Safety — TH series','STE73883'],['Alarm Manual TS1000/TS2000','STE71283'],['Trasporto TH650A','STE79087'],['Trasporto TH850A/1050A','STE79095'],['Trasporto SR-404/405HC','STE79099'],['Trasporto TCR10LA','STE80856'],['Manutenzione TCR10LA','STE80857'],['Dust-proof TH650A-IP','STE80747'],['Dust-proof TH850A/1050A-IP','STE80765'],['Clean TH650A-CRB','STE80749'],['Ceiling type TH650A-T/TH1050A-T','STE80716']],
-    'TS3000': [["Operator's Manual",'STE80720'],["Operator's Manual TP3000",'STE85412'],['Robot Language (SCOL)','STE80721'],['Interface','STE80729'],['Communication','STE80722'],['Simple PLC','STE80737'],['Fieldbus Slave','STE80756'],['User Parameter','STE80725'],['Safety — TH/THL','STE80755'],['Alarm Manual','STE80723'],['Conveyor Sync','STE85304'],['Vision + Conveyor Sync','STE80866'],['Trasporto THP550','STE80772'],['Trasporto TH450A/550A','STE80808'],['Trasporto TH180/250A/350A','STE85389'],['Trasporto SR-HC','STE80884'],['Trasporto THL','STE85356'],['Safety THL','STE85358'],['Dust-proof THP550/TH-IP','STE80783'],['Clean TH/THP-CRB','STE80872'],['Ceiling type TH/THP-T','STE80870'],['Dust-proof THL-IP6X','STE85494'],['Clean THL','STE85442'],['THL Specifications','STE85431']],
-    'TS3100': [["Operator's Manual",'STE80720'],['Robot Language (SCOL)','STE80721'],['Interface','STE80729'],['Communication','STE80722'],['Simple PLC','STE80737'],['Fieldbus Slave','STE80756'],['User Parameter','STE80725'],['Safety — TH','STE80755'],['Alarm Manual','STE80723'],['Trasporto TH650A','STE85305'],['Trasporto TH850A/1050A/1200A','STE80753'],['Trasporto THP700','STE85320'],['Trasporto SR-HC','STE80884'],['Dust-proof THP700-IP','STE85336'],['Clean THP700-CRB','STE85337']],
-    'TS3000 / TS3100': [["Operator's Manual",'STE80720'],['Robot Language (SCOL)','STE80721'],['Interface','STE80729'],['Communication','STE80722'],['Simple PLC','STE80737'],['Fieldbus Slave','STE80756'],['User Parameter','STE80725'],['Safety — TH/THL','STE80755'],['Alarm Manual','STE80723'],['Trasporto SR-HC','STE80884']],
+    'TS3000': [["Operator's Manual",'STE80720'],["Operator's Manual TP3000",'STE85412'],['Linguaggio robot SCOL (italiano)','STI80721'],['Interface','STE80729'],['Communication','STE80722'],['Simple PLC','STE80737'],['Fieldbus Slave','STE80756'],['User Parameter','STE80725'],['Safety — TH/THL','STE80755'],['Alarm Manual','STE80723'],['Conveyor Sync','STE85304'],['Vision + Conveyor Sync','STE80866'],['Trasporto THP550','STE80772'],['Trasporto TH450A/550A','STE80808'],['Trasporto TH180/250A/350A','STE85389'],['Trasporto SR-HC','STE80884'],['Trasporto THL','STE85356'],['Safety THL','STE85358'],['Dust-proof THP550/TH-IP','STE80783'],['Clean TH/THP-CRB','STE80872'],['Ceiling type TH/THP-T','STE80870'],['Dust-proof THL-IP6X','STE85494'],['Clean THL','STE85442'],['THL Specifications','STE85431']],
+    'TS3100': [["Operator's Manual",'STE80720'],['Linguaggio robot SCOL (italiano)','STI80721'],['Interface','STE80729'],['Communication','STE80722'],['Simple PLC','STE80737'],['Fieldbus Slave','STE80756'],['User Parameter','STE80725'],['Safety — TH','STE80755'],['Alarm Manual','STE80723'],['Trasporto TH650A','STE85305'],['Trasporto TH850A/1050A/1200A','STE80753'],['Trasporto THP700','STE85320'],['Trasporto SR-HC','STE80884'],['Dust-proof THP700-IP','STE85336'],['Clean THP700-CRB','STE85337']],
+    'TS3000 / TS3100': [["Operator's Manual",'STE80720'],['Linguaggio robot SCOL (italiano)','STI80721'],['Interface','STE80729'],['Communication','STE80722'],['Simple PLC','STE80737'],['Fieldbus Slave','STE80756'],['User Parameter','STE80725'],['Safety — TH/THL','STE80755'],['Alarm Manual','STE80723'],['Trasporto SR-HC','STE80884']],
     'TSL3000 / 3000E': [["Operator's Manual",'STE80720'],['Robot Language (SCOL)','STE80721'],['Interface (TSL)','STE85364'],['Interface (TSL3000E)','STE85457'],['Simple PLC (TSL)','STE85368'],['Safety — THL','STE85358'],['Alarm Manual','STE80723'],['Trasporto THL','STE85356'],['Clean THL','STE85442'],['Dust-proof THL-IP6X','STE85494'],['THL Specifications','STE85431'],['Ceiling type THL','STEA1131']],
-    'TS3000 / 3000E': [["Operator's Manual",'STE80720'],['Robot Language (SCOL)','STE80721'],['Interface','STE80729'],['Communication','STE80722'],['Simple PLC','STE80737'],['Fieldbus Slave','STE80756'],['Safety — TH/THL','STE80755'],['Alarm Manual','STE80723'],['Trasporto THL','STE85356'],['Safety THL','STE85358'],['Clean THL','STE85442']],
-    'TS5000-SS': [["Startup","STA1237"],["Interface","STA1238"],["TP5000 Operator's Manual","STEA1162"],["Robot Language (SCOL2)","STEA1163"],["Communication Manual","STEA1164"],["Alarm Manual","STEA1165"],["Parameter Manual","STEA1166"],["Safety — THE400","STA1239"],["Safety — THL","STA1235"],["Robot — THE400","STA1213"],["Robot — THL500/600/700","STA1234"],["Dust-Proof THE400","STEA1200"],["Ceiling Mount THE400","STEA1131"],["TCmini (Built-in PLC)","STEA1168"],["TP1000 Operator's Manual","STEA1169"],["Fieldbus Slave Function","STEA1190"],["TS5000 Communication DLL","STA1205"],["Conveyor Synchronization","STA5572"]],
-    'TS5000': [["Startup","STEA1161"],["Interface","STEA1167"],["TP5000 Operator's Manual","STEA1162"],["Robot Language (SCOL2)","STEA1163"],["Communication Manual","STEA1164"],["Alarm Manual","STEA1165"],["Parameter Manual","STEA1166"],["Safety — THE600","STEA1179"],["Robot — THE600","STEA1171"],["Vision + Conveyor Sync","STEA1183"],["Ceiling Mount THE600","STA1204"],["TCmini (Built-in PLC)","STEA1168"],["TP1000 Operator's Manual","STEA1169"],["Fieldbus Slave Function","STEA1190"],["TS5000 Communication DLL","STA1205"],["Conveyor Synchronization","STA5572"]],
-    'TS5000-MS': [["Startup","STEA1161"],["Interface","STEA1167"],["TP5000 Operator's Manual","STEA1162"],["Robot Language (SCOL2)","STEA1163"],["Communication Manual","STEA1164"],["Alarm Manual","STEA1165"],["Parameter Manual","STEA1166"],["Safety — THE800/1000","STA1246"],["Robot — THE800/1000","STA1245"],["Ceiling Mount THE800/1000","STA1297"],["TCmini (Built-in PLC)","STEA1168"],["TP1000 Operator's Manual","STEA1169"],["Fieldbus Slave Function","STEA1190"],["TS5000 Communication DLL","STA1205"],["Conveyor Synchronization","STA5572"]],
-    'TS5000-EMS': [["Startup","STA1223"],["Interface","STA1225"],["TP5000 Operator's Manual","STEA1162"],["Robot Language (SCOL2)","STEA1163"],["Communication Manual","STEA1164"],["Alarm Manual","STEA1165"],["Parameter Manual","STEA1166"],["Safety — THE600-E","STA1212"],["Safety — THE800E/1000E","STA1248"],["Robot — THE600-E","STA1211"],["Robot — THE800E/1000E","STA1245"],["Integration — THE600-E","STA1232"],["Integration — THE800E/1000E","STA1247"],["Ceiling Mount THE600-E","STA1219"],["Ceiling Mount THE800E/1000E","STA1297"],["TCmini (Built-in PLC)","STEA1168"],["TP1000 Operator's Manual","STEA1169"],["Fieldbus Slave Function","STEA1190"],["TS5000 Communication DLL","STA1205"],["Conveyor Synchronization","STA5572"]],
+    'TS3000 / 3000E': [["Operator's Manual",'STE80720'],['Linguaggio robot SCOL (italiano)','STI80721'],['Interface','STE80729'],['Communication','STE80722'],['Simple PLC','STE80737'],['Fieldbus Slave','STE80756'],['Safety — TH/THL','STE80755'],['Alarm Manual','STE80723'],['Trasporto THL','STE85356'],['Safety THL','STE85358'],['Clean THL','STE85442']],
+    'TS5000-SS': [["Startup","STEA1237"],["Interface 🇯🇵","STA1238"],["TP5000 Operator's Manual","STEA1162"],["Robot Language (SCOL2)","STEA1163"],["Communication Manual","STEA1164"],["Alarm Manual","STEA1165"],["Parameter Manual","STEA1166"],["Safety — THE400","STEA1239"],["Safety — THL","STEA1235"],["Robot — THE400","STEA1213"],["Robot — THL500/600/700","STEA1234"],["Dust-Proof THE400","STEA1200"],["Ceiling Mount THE400","STEA1131"],["TCmini (Built-in PLC)","STEA1168"],["TP1000 Operator's Manual","STEA1169"],["Fieldbus Slave Function","STEA1190"],["TS5000 Communication DLL 🇯🇵","STA1205"],["Conveyor Synchronization 🇯🇵","STA5572"]],
+    'TS5000': [["Startup","STEA1161"],["Interface","STEA1167"],["TP5000 Operator's Manual","STEA1162"],["Robot Language (SCOL2)","STEA1163"],["Communication Manual","STEA1164"],["Alarm Manual","STEA1165"],["Parameter Manual","STEA1166"],["Safety — THE600","STEA1179"],["Robot — THE600","STEA1171"],["Vision + Conveyor Sync","STEA1183"],["Ceiling Mount THE600","STEA1204"],["TCmini (Built-in PLC)","STEA1168"],["TP1000 Operator's Manual","STEA1169"],["Fieldbus Slave Function","STEA1190"],["TS5000 Communication DLL 🇯🇵","STA1205"],["Conveyor Synchronization 🇯🇵","STA5572"]],
+    'TS5000-MS': [["Startup","STEA1161"],["Interface","STEA1167"],["TP5000 Operator's Manual","STEA1162"],["Robot Language (SCOL2)","STEA1163"],["Communication Manual","STEA1164"],["Alarm Manual","STEA1165"],["Parameter Manual","STEA1166"],["Safety — THE800/1000","STEA1246"],["Robot — THE800/1000 🇯🇵","STA1245"],["Ceiling Mount THE800/1000 🇯🇵","STA1297"],["TCmini (Built-in PLC)","STEA1168"],["TP1000 Operator's Manual","STEA1169"],["Fieldbus Slave Function","STEA1190"],["TS5000 Communication DLL 🇯🇵","STA1205"],["Conveyor Synchronization 🇯🇵","STA5572"]],
+    'TS5000-EMS': [["Startup 🇯🇵","STA1223"],["Interface 🇯🇵","STA1225"],["TP5000 Operator's Manual","STEA1162"],["Robot Language (SCOL2)","STEA1163"],["Communication Manual","STEA1164"],["Alarm Manual","STEA1165"],["Parameter Manual","STEA1166"],["Safety — THE600-E","STEA1212"],["Safety — THE800E/1000E","STEA1248"],["Robot — THE600-E","STEA1211"],["Robot — THE800E/1000E 🇯🇵","STA1245"],["Safety — THE400-E","STEA1214"],["Integration — THE400-E","STEA1240"],["Integration — THE600-E","STEA1232"],["Integration — THE800E/1000E","STEA1247"],["Ceiling Mount THE600-E","STEA1219"],["Ceiling Mount THE800E/1000E 🇯🇵","STA1297"],["TCmini (Built-in PLC)","STEA1168"],["TP1000 Operator's Manual","STEA1169"],["Fieldbus Slave Function","STEA1190"],["TS5000 Communication DLL 🇯🇵","STA1205"],["Conveyor Synchronization 🇯🇵","STA5572"]],
   };
   const PDF_LABEL = {
     'STE80723':'Alarm Manual (TS3000)','STE71283':'Operator\'s Manual + Alarms (TS1000/TS2000)','STE71296':'User Parameter (TS1000/TS2000)','STE80866':'Vision Sensor + Conveyor (TS3000)','STE71371':'SR series (TS2000)',
@@ -653,8 +658,9 @@
       const ctx = canvas.getContext('2d');
 
       const container = document.getElementById('pdfContainer');
-      const cssW = Math.max(200, container.clientWidth);
       const vp1 = page.getViewport({scale: 1});
+      /* schermo largo (PC): la pagina si adatta all'altezza, non diventa gigante */
+      const cssW = Math.max(200, Math.min(container.clientWidth, container.clientHeight * (vp1.width / vp1.height)));
       const cssScale = cssW / vp1.width;
 
       const pixelRatio = window.devicePixelRatio || 1;
@@ -761,10 +767,23 @@
     sizer.style.width  = (pdfBaseW * z) + 'px';
     sizer.style.height = (pdfBaseH * z) + 'px';
     w.style.transform = 'scale(' + z + ') translate(' + (-pdfOffX) + 'px,' + (-pdfOffY) + 'px)';
+    pdfPlaceArrows();
   }
+  /* frecce pagina: vicino ai bordi del foglio (utile su schermi larghi), sempre dentro lo schermo */
+  function pdfPlaceArrows(){
+    var c=document.getElementById('pdfContainer'), sz=document.getElementById('pdfSizer'),
+        pv=document.getElementById('pdfPrev'), nx=document.getElementById('pdfNext');
+    if(!c||!sz||!pv||!nx) return;
+    var cr=c.getBoundingClientRect(), sr=sz.getBoundingClientRect(), W=46, g=8;
+    var pl=Math.max(cr.left+g, sr.left-W-g), nl=Math.min(cr.right-W-g, sr.right+g);
+    pl=Math.min(pl, cr.right-2*W-3*g); nl=Math.max(nl, cr.left+W+2*g);
+    pv.style.left=pl+'px'; pv.style.right='auto'; nx.style.left=nl+'px'; nx.style.right='auto';
+  }
+  window.addEventListener('resize', function(){ setTimeout(pdfPlaceArrows, 60); });
+  function pdfZoomBtn(f){ var c=document.getElementById('pdfContainer'); if(!c) return; var z=pdfZoom*f; if(Math.abs(z-1)<0.12) z=1; pdfZoomAt(z, c.clientWidth/2, c.clientHeight/2); }
   function pdfZoomAt(newZ, fx, fy){   // fx, fy: punto fisso in coordinate del contenitore
     var c = document.getElementById('pdfContainer'); if(!c) return;
-    newZ = Math.max(1, Math.min(5, newZ));
+    newZ = Math.max(0.4, Math.min(5, newZ));
     var cx = (c.scrollLeft + fx) / pdfZoom, cy = (c.scrollTop + fy) / pdfZoom;
     pdfApplyZoom(newZ);
     c.scrollLeft = cx * newZ - fx; c.scrollTop = cy * newZ - fy;
@@ -773,6 +792,7 @@
     var c = document.getElementById('pdfScreen') ? document.getElementById('pdfContainer') : null;
     function init(){
       c = document.getElementById('pdfContainer'); if(!c) return;
+      c.addEventListener('scroll', pdfPlaceArrows, {passive:true});
       var d0 = 0, z0 = 1, pinch = false, lastTap = 0, lastX = 0, lastY = 0;
       function mid(e){ var r=c.getBoundingClientRect(); return {x:(e.touches[0].clientX+e.touches[1].clientX)/2 - r.left, y:(e.touches[0].clientY+e.touches[1].clientY)/2 - r.top}; }
       function dist(e){ return Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY); }
@@ -1432,9 +1452,19 @@
 
           <div class="cols">
             <div>
-              <div class="v-title current">v33 <span class="date">(24/10)</span></div>
+              <div class="v-title current">v34 <span class="date">(26/10)</span></div>
               <div class="v-body">
-                • <b>Cerca nel PDF</b>: barra in basso, risultati evidenziati, frecce ▲▼ per scorrere le occorrenze (anche tra pagine diverse)
+                • <b>TS5000</b>: manuali in <b>inglese</b> al posto del giapponese (bracci THE400/600/800-E, THL, sicurezza, integrazione, controllore SS)<br>
+                • Nuovi: Safety e Integration <b>THE400-E</b><br>
+                • 🇯🇵 = manuale ancora solo in giapponese<br>
+                • Nuova icona robot SCARA
+              </div>
+
+              <div class="v-title">v33 <span class="date">(24/10)</span></div>
+              <div class="v-body">
+                • <b>Cerca nel PDF</b>: barra in basso, risultati evidenziati, frecce ▲▼ per scorrere le occorrenze (anche tra pagine diverse)<br>
+                • <b>Manuale linguaggio robot in italiano</b> per TS3000/TS3100<br>
+                • <b>Versione Windows</b> offline; su PC la pagina PDF si adatta all'altezza dello schermo; tasti <b>+ / −</b> per zoom
               </div>
 
               <div class="v-title">v32 <span class="date">(24/10)</span></div>
@@ -1519,7 +1549,7 @@
   });
 </script>
 <div class="app-footer">
-  <span class="ver" onclick="showAbout()" style="cursor:pointer" title="Info e cronologia versioni">v33 &nbsp;ⓘ</span>
+  <span class="ver" onclick="showAbout()" style="cursor:pointer" title="Info e cronologia versioni">v34 &nbsp;ⓘ</span>
   <span class="logo"><span class="dot"></span>TR/software</span>
 </div>
 
