@@ -241,6 +241,8 @@
         .cod-use { font-size:.78rem; color:#555; margin:3px 0; display:flex; flex-wrap:wrap; gap:4px; align-items:center; }
         .cod-pg { border:none; background:#eef0f5; border-radius:8px; padding:3px 8px; font-size:.76rem; font-weight:700; color:#1a1a2e; cursor:pointer; font-family:inherit; }
         .cod-note { font-size:.72rem; color:#8a90a2; margin:6px 0 0; line-height:1.35; }
+        .sel-cod { position:fixed; z-index:3500; display:none; border:none; border-radius:20px; padding:8px 14px; font-size:.84rem; font-weight:700; font-family:inherit; color:#fff; background:#e94560; box-shadow:0 3px 12px rgba(0,0,0,.4); cursor:pointer; white-space:nowrap; }
+        .sel-cod.show { display:block; }
         .pm-back { position:fixed; inset:0; background:rgba(10,12,24,.55); z-index:3000; display:none; align-items:center; justify-content:center; padding:16px; }
         .pm-back.show { display:flex; }
         .pm-box { background:#fff; border-radius:16px; padding:18px; width:100%; max-width:340px; box-shadow:0 10px 40px rgba(0,0,0,.35); font-family:inherit; }
@@ -1277,7 +1279,15 @@ var CODICI_PLAB={"STE85357:309":"THL300 / THL400","STE85357:310":"THL500 / THL60
   function closeCodici(){ document.getElementById('codModal').classList.remove('show'); }
   function codPick(c){ var i = document.getElementById('codIn'); i.value = c; codSearch(); }
   function codOpenPdf(man, pg){ closeCodici(); codReturn = true; openPdf(man, pg); }
-  function codSearch(){
+  function codToggle(gi){
+    var m = document.getElementById('cm' + gi), b = document.getElementById('cb' + gi);
+    if(!m || !b) return;
+    if(!b.getAttribute('data-t')) b.setAttribute('data-t', b.textContent);
+    var open = m.style.display !== 'none';
+    m.style.display = open ? 'none' : 'block';
+    b.textContent = open ? b.getAttribute('data-t') : '▲ Nascondi';
+  }
+    function codSearch(){
     codBuild();
     var q = codKey(document.getElementById('codIn').value), box = document.getElementById('codRes');
     if(q.length < 4){ box.innerHTML = '<p class="cod-note">Scrivi almeno 4 caratteri del codice.</p>'; return; }
@@ -1304,12 +1314,24 @@ var CODICI_PLAB={"STE85357:309":"THL300 / THL400","STE85357:310":"THL500 / THL60
       });
       if(g[3]) h += '<p class="cod-note">⚠️ Insieme di pezzi: il codice unità vale per tutto il gruppo (più codici disegno), non sono equivalenti uno a uno.</p>';
       if(g[1].length === 1) h += '<p class="cod-note">Nei manuali questo pezzo compare con un solo codice.</p>';
-      h += '<div class="cod-uses">';
-      g[2].slice(0, 12).forEach(function(u){
-        h += '<div class="cod-use"><b>' + esc(CODICI_PLAB[u[0] + ':' + u[1]] || CODICI_LAB[u[0]] || u[0]) + '</b>' + (u[2] ? ' · ' + esc(u[2]) : '') +
-             ' <button class="cod-pg" onclick="codOpenPdf(\'' + u[0] + '\',' + u[1] + ')">📄 ' + u[0] + ' pag. ' + u[1] + '</button></div>';
+      /* raggruppa per manuale + robot + asse: piu' pagine nella stessa riga */
+      var grp = [], gm = {};
+      g[2].forEach(function(u){
+        var lb = CODICI_PLAB[u[0] + ':' + u[1]] || CODICI_LAB[u[0]] || u[0], kk = u[0] + '|' + lb + '|' + (u[2] || '');
+        if(!gm[kk]){ gm[kk] = {man:u[0], lb:lb, ax:u[2] || '', pg:[]}; grp.push(gm[kk]); }
+        gm[kk].pg.push(u[1]);
       });
-      if(g[2].length > 12) h += '<p class="cod-note">… e altri ' + (g[2].length - 12) + ' manuali.</p>';
+      var LIM = 6;
+      h += '<div class="cod-uses">';
+      grp.forEach(function(x, xi){
+        if(xi === LIM) h += '<div class="cod-more" id="cm' + gi + '" style="display:none">';
+        h += '<div class="cod-use"><b>' + esc(x.lb) + '</b>' + (x.ax ? ' · ' + esc(x.ax) : '');
+        x.pg.forEach(function(pg){ h += ' <button class="cod-pg" onclick="codOpenPdf(\'' + x.man + '\',' + pg + ')">📄 ' + x.man + ' pag. ' + pg + '</button>'; });
+        h += '</div>';
+      });
+      if(grp.length > LIM){
+        h += '</div><button class="cod-pg" id="cb' + gi + '" onclick="codToggle(' + gi + ')">▼ Mostra gli altri ' + (grp.length - LIM) + '</button>';
+      }
       h += '</div></div>';
     });
     if(hits.length > 30) h += '<p class="cod-note">Altri ' + (hits.length - 30) + ' risultati: scrivi più caratteri per restringere.</p>';
@@ -1318,6 +1340,45 @@ var CODICI_PLAB={"STE85357:309":"THL300 / THL400","STE85357:310":"THL500 / THL60
   }
   var _closePdf0 = closePdf;
   closePdf = function(){ _closePdf0(); if(codReturn){ codReturn = false; openCodici(true); } };
+
+  /* ===== Selezione di un codice nel PDF -> tasto Corrispondenze ===== */
+  var selCodTimer = null, selCodTxt = '';
+  function selCodHide(){ var b = document.getElementById('selCodBtn'); if(b) b.classList.remove('show'); }
+  function selCodCheck(){
+    if(!pdfScreenOpen){ selCodHide(); return; }
+    var sel = window.getSelection ? window.getSelection() : null;
+    if(!sel || sel.isCollapsed || !sel.rangeCount){ selCodHide(); return; }
+    var txt = sel.toString().trim();
+    if(!txt || txt.length > 40 || /\s.*\s.*\s/.test(txt)){ selCodHide(); return; }
+    var key = codKey(txt);
+    if(key.length < 4){ selCodHide(); return; }
+    codBuild();
+    var hit = CODICI_IDX.some(function(ks){ return ks.indexOf(key) >= 0; });
+    if(!hit){ selCodHide(); return; }
+    var rc = sel.getRangeAt(0).getBoundingClientRect();
+    if(!rc || (rc.width === 0 && rc.height === 0)){ selCodHide(); return; }
+    selCodTxt = txt;
+    var b = document.getElementById('selCodBtn');
+    if(!b){
+      b = document.createElement('button'); b.id = 'selCodBtn'; b.className = 'sel-cod';
+      b.addEventListener('mousedown', function(e){ e.preventDefault(); });
+      b.addEventListener('touchstart', function(e){ e.stopPropagation(); }, {passive:true});
+      b.addEventListener('click', function(e){
+        e.preventDefault(); e.stopPropagation();
+        var t = selCodTxt; selCodHide();
+        openCodici(); var i = document.getElementById('codIn'); i.value = t; codSearch();
+      });
+      document.body.appendChild(b);
+    }
+    b.textContent = '🔩 Corrispondenze ' + (txt.length > 16 ? txt.slice(0, 16) + '…' : txt);
+    b.classList.add('show');
+    var bw = b.offsetWidth, bh = b.offsetHeight, vw = window.innerWidth, vh = window.innerHeight;
+    var left = Math.max(8, Math.min(vw - bw - 8, rc.left + rc.width / 2 - bw / 2));
+    var top = rc.bottom + 12; if(top + bh > vh - 8) top = Math.max(8, rc.top - bh - 12);
+    b.style.left = left + 'px'; b.style.top = top + 'px';
+  }
+  document.addEventListener('selectionchange', function(){ clearTimeout(selCodTimer); selCodTimer = setTimeout(selCodCheck, 180); });
+  document.addEventListener('scroll', function(){ selCodHide(); }, true);
 
   function pdfPrevPage(){ if(pdfCurPage > 1) renderPdfPage(pdfCurPage - 1); }
   function pdfNextPage(){ if(pdfCurPage < pdfTotPages) renderPdfPage(pdfCurPage + 1); }
@@ -1878,7 +1939,17 @@ var CODICI_PLAB={"STE85357:309":"THL300 / THL400","STE85357:310":"THL500 / THL60
 
           <div class="cols">
             <div>
-              <div class="v-title current">v45 <span class="date">(27/10)</span></div>
+              <div class="v-title current">v47 <span class="date">(27/10)</span></div>
+              <div class="v-body">
+                • Codici ricambi: i manuali dello stesso robot sono raggruppati e c'è il tasto <b>Mostra gli altri</b> per vedere tutto l'elenco
+              </div>
+
+              <div class="v-title">v46 <span class="date">(27/10)</span></div>
+              <div class="v-body">
+                • Nel PDF: selezioni un codice (anche con doppio clic) e compare il tasto <b>🔩 Corrispondenze</b>
+              </div>
+
+              <div class="v-title">v45 <span class="date">(27/10)</span></div>
               <div class="v-body">
                 • Corretto: tasto <b>🔩 Codici ricambi</b> (nella v44 non si apriva)<br>
                 • Tasto <b>Corrispondenza codici ricambi</b> anche dentro la Lista Ricambi<br>
@@ -2034,7 +2105,7 @@ var CODICI_PLAB={"STE85357:309":"THL300 / THL400","STE85357:310":"THL500 / THL60
   });
 </script>
 <div class="app-footer">
-  <span class="ver" onclick="showAbout()" style="cursor:pointer" title="Info e cronologia versioni">v45 &nbsp;ⓘ</span>
+  <span class="ver" onclick="showAbout()" style="cursor:pointer" title="Info e cronologia versioni">v47 &nbsp;ⓘ</span>
   <span class="net" id="netBadge"><i></i><span id="netTxt">Online</span></span>
   <span class="logo"><span class="dot"></span>TR/software</span>
 </div>
