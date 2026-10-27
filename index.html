@@ -228,6 +228,27 @@
         .pdf-trfab.on { background:#e94560; }
         .cod-btn { display:block; width:100%; margin:0 0 14px; padding:11px 14px; border:none; border-radius:14px; background:#1a1a2e; color:#fff; font-size:.92rem; font-weight:700; font-family:inherit; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.18); }
         .cod-btn:active { background:#2c2c4a; }
+
+        .cod-tabs { display:flex; gap:8px; margin:0 0 10px; flex-wrap:wrap; }
+        .cod-tabs button { flex:1 1 160px; border:none; border-radius:10px; padding:10px 8px; font-weight:700; font-size:.82rem; background:#1a1a2e; color:#fff; cursor:pointer; font-family:inherit; }
+        .tab-scr { position:fixed; inset:0; background:#fff; z-index:3100; display:none; flex-direction:column; font-family:inherit; }
+        .tab-scr.show { display:flex; }
+        .tab-head { padding:10px 14px; background:#1a1a2e; color:#fff; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+        .tab-head h3 { margin:0; font-size:1rem; flex:1 1 200px; }
+        .tab-head button { border:none; border-radius:8px; padding:7px 12px; font-weight:700; font-size:.8rem; cursor:pointer; font-family:inherit; background:#e94560; color:#fff; }
+        .tab-head button.sec { background:#3a3f5c; }
+        .tab-bar { padding:8px 14px; border-bottom:1px solid #e3e6ee; display:flex; gap:6px; flex-wrap:wrap; align-items:center; font-size:.78rem; color:#444; }
+        .tab-bar a { background:#eef0f5; border-radius:8px; padding:3px 9px; color:#1a1a2e; font-weight:700; text-decoration:none; cursor:pointer; }
+        .tab-body { flex:1; overflow:auto; padding:8px 14px 40px; -webkit-overflow-scrolling:touch; }
+        .tab-body h4 { margin:18px 0 6px; font-size:.98rem; color:#1a1a2e; }
+        .tab-body table { border-collapse:collapse; width:100%; font-size:.8rem; }
+        .tab-body th { position:sticky; top:0; background:#eef0f5; text-align:left; padding:6px 8px; border:1px solid #d5d9e4; white-space:nowrap; }
+        .tab-body td { padding:6px 8px; border:1px solid #e3e6ee; vertical-align:top; }
+        .tab-body td.n { text-align:center; font-weight:800; font-size:.95rem; }
+        .tab-body td.c { font-weight:800; white-space:nowrap; }
+        .tab-body .tcode { display:inline-block; background:#f3f4f8; border-radius:6px; padding:1px 6px; margin:1px 2px 1px 0; white-space:nowrap; }
+        .tab-body .tmod b { color:#1a1a2e; }
+        .tab-body .tax { color:#6c757d; }
         .cod-in { width:100%; height:46px; border:2px solid #dfe3ec; border-radius:12px; padding:0 12px; font-size:1rem; font-family:inherit; margin-bottom:10px; box-sizing:border-box; }
         .cod-in:focus { outline:none; border-color:#e94560; }
         .cod-res { max-height:58vh; overflow:auto; margin-bottom:10px; }
@@ -455,10 +476,19 @@
   <div class="pm-box wide">
     <h3>🔩 Codici ricambi</h3>
     <p>Scrivi un codice (disegno, unità o modello) e vedi le corrispondenze trovate nei manuali.</p>
+    <div class="cod-tabs">
+      <button onclick="codTabOpen('arm')">📋 Tabella ricambi bracci</button>
+      <button onclick="codTabOpen('ctl')">📋 Tabella ricambi controller</button>
+    </div>
     <input class="cod-in" id="codIn" type="search" placeholder="Es. S948803, Y610D04P0, MSMD022S2V" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="search" oninput="codSearch()">
     <div class="cod-res" id="codRes"></div>
     <div class="pm-btns"><button class="pm-btn" onclick="closeCodici()">Chiudi</button></div>
   </div>
+</div>
+<div class="tab-scr" id="tabScr">
+  <div class="tab-head"><h3 id="tabTitle"></h3><button class="sec" onclick="codTabCsv()">⬇️ Scarica Excel (CSV)</button><button onclick="codTabClose()">✕ Chiudi</button></div>
+  <div class="tab-bar" id="tabBar"></div>
+  <div class="tab-body" id="tabBody"></div>
 </div>
 <div class="pm-back" id="langModal" onclick="if(event.target===this)closeLangModal()">
   <div class="pm-box">
@@ -484,7 +514,6 @@
           'SR FOUP transfer':'STE73869','SR Cassette transfer':'STE73872','SR Wafer transfer':'STE73874' }},
       'TS2000L': { alarm:null, lang:'STE71284', plc:'STE71368', arms:{ 'SR-1504HZ':'STE73825' }},
       'TS2100':  { alarm:null, lang:'STE80721', plc:'STE71368', arms:{ 'SR-404HC (wafer)':'STE80700','SR-405HC (wafer)':'STE80700' }},
-      'TS3000 / TS3100': { alarm:'STE80723', lang:'STI80721', plc:'STE80737', arms:{ 'SR-404HC':'STE80885','SR-405HC':'STE80885','SR-624HC':'STE80885' }},
     }},
     TH: { label:'TH', cls:'th', desc:'Serie TH / THP', controllers:{
       'TS2000': { alarm:null, lang:'STE71284', plc:'STE71368', arms:{ 'TH450A':'STE85300','TH550A':'STE85300','TH650A':'STE80743','TH850A':'STE80887','TH1050A':'STE80887','TCR5L (cleanroom)':'STE80898' }},
@@ -1239,6 +1268,8 @@
       wrapper.appendChild(layer);
       todo.forEach(function(p){
         if(!p.it) return;
+        if((p.r - p.l) < p.last.h * 1.6 && (p.b - p.t) > p.last.h * 3) return; /* testo verticale/ruotato: lascio l\u2019originale */
+        if(p.last.h < 5.5) return; /* scritte minuscole (schemi): illeggibili anche tradotte, lascio l\u2019originale */
         var below = Infinity;
         paras.forEach(function(q){ if(q !== p && q.t > p.t + 0.5 * p.h && q.l < p.r && q.r > p.l && q.t < below) below = q.t; });
         var w = p.r - p.l + 2, h = p.b - p.t + 2;
@@ -1248,7 +1279,7 @@
         paras.forEach(function(q){ if(q !== p && q.l >= p.r - 1 && q.t < p.b && q.b > p.t && q.l < rightL) rightL = q.l; });
         var wMax = Math.max(w, Math.min((rightL === Infinity ? wrapper.offsetWidth - 4 : rightL - 2) - (p.l - 1), w * 1.6));
         el.style.left = (p.l - 1) + 'px'; el.style.top = (p.t - 1) + 'px'; el.style.width = w + 'px'; el.style.height = 'auto';
-        var fs0 = Math.max(5, p.last.h * 0.86), fs = fs0; el.style.fontSize = fs + 'px';
+        var fs0 = Math.max(5, Math.min(p.last.h * 0.86, 26, Math.max(7, (p.r - p.l) * 0.9))), fs = fs0; el.style.fontSize = fs + 'px';
         layer.appendChild(el);
         var guard = 0, wUse = w;
         while((el.offsetHeight > allowed + 1 || el.scrollWidth > wUse + 1) && fs > 3.5 && guard++ < 80){
@@ -1256,6 +1287,9 @@
           if(fs < 0.8 * fs0 && wUse < wMax){ wUse = wMax; el.style.width = wUse + 'px'; fs = fs0; el.style.fontSize = fs + 'px'; }
         }
         el.style.height = Math.max(h, el.offsetHeight) + 'px';
+        var bx = el.offsetLeft, by = el.offsetTop, bw = el.offsetWidth, bh = el.offsetHeight, dup = false;
+        [].forEach.call(layer.children, function(o){ if(o === el || dup) return; var ix = Math.min(bx + bw, o.offsetLeft + o.offsetWidth) - Math.max(bx, o.offsetLeft), iy = Math.min(by + bh, o.offsetTop + o.offsetHeight) - Math.max(by, o.offsetTop); if(ix > 0 && iy > 0 && ix * iy > 0.6 * Math.min(bw * bh, o.offsetWidth * o.offsetHeight)) dup = true; });
+        if(dup) layer.removeChild(el); /* doppione/sovrapposto: tengo il primo */
       });
       pdfTrOn = true; btn.textContent = '🇬🇧 Originale'; btn.classList.add('on');
       if(fails) showToast('⚠️ ' + fails + ' blocchi non tradotti');
@@ -1348,6 +1382,125 @@ var CODICI_PLAB={"STE85357:309":"THL300 / THL400","STE85357:310":"THL500 / THL60
   }
   var _closePdf0 = closePdf;
   closePdf = function(){ _closePdf0(); if(codReturn){ codReturn = false; openCodici(true); } };
+
+
+  /* ===== Tabelle di tutte le corrispondenze (bracci / controller) ===== */
+  var TAB_KIND = 'arm', TAB_ALL = false, TAB_CSV = '';
+  var TAB_CTL_RE = /^(Printedboard|Printedcircuitboards?|Batteria|Mainpowerswitch(es)?|Teachpendant|ティーチペンダント|Operationpanelunit|Systemdisk|Lampada|LEDランプ|PS\d|GS\d|スイッチング電源|Fuse|ヒューズ|Servounit|コネクタ|Connector|TP5000|I\/Oジャンパ|SAFEジャンパ|ReplacementofOutputICs|TransistoroutputIC|IC$|CN0assembly|ブレキ|Pin$)/;
+  function tabCat(n, kind){
+    var s = n;
+    if(kind === 'ctl'){
+      if(/^Printed/.test(s)) return 'Schede elettroniche';
+      if(/^Batteria/.test(s)) return 'Batterie';
+      if(/^(PS\d|GS\d)|Switching|スイッチング/.test(s)) return 'Alimentatori';
+      if(/^Fuse|ヒューズ/.test(s)) return 'Fusibili';
+      if(/^Servounit/.test(s)) return 'Unità servo';
+      if(/^Mainpower/.test(s)) return 'Interruttori principali';
+      if(/Teachpendant|ティーチ|TP5000/.test(s)) return 'Teach pendant';
+      if(/Connector|コネクタ|ジャンパ/.test(s)) return 'Connettori e jumper';
+      return 'Altri ricambi controller';
+    }
+    if(s === 'Motore servo AC') return 'Motori';
+    if(/^(Riduttore|Harmonicdrive|Inputgear|Helicalgear)$/.test(s)) return 'Riduttori e ingranaggi';
+    if(/^(Cinghia dentata|Stainlessbelt)$/.test(s)) return 'Cinghie';
+    if(s === 'Puleggia') return 'Pulegge';
+    if(/^(Vite a ricircolo|Ball-screw)/.test(s)) return 'Viti a ricircolo / spline';
+    if(/^(Linearguide|LMGUIDE|LMguide)$/.test(s)) return 'Guide lineari';
+    if(/^(Grasso|グリス)$/.test(s)) return 'Grassi';
+    if(s === 'Cablaggio') return 'Cablaggi';
+    if(/^(Bearing)$/.test(s)) return 'Cuscinetti';
+    if(/^(Oリング|Oring|O-ring)$/.test(s)) return 'O-ring';
+    if(s === 'Freno') return 'Freni';
+    return 'Altri ricambi bracci';
+  }
+  var TAB_ORD = ['Motori','Riduttori e ingranaggi','Cinghie','Pulegge','Viti a ricircolo / spline','Guide lineari','Cablaggi','Cuscinetti','Freni','Grassi','O-ring','Altri ricambi bracci',
+                 'Schede elettroniche','Batterie','Alimentatori','Fusibili','Unità servo','Interruttori principali','Teach pendant','Connettori e jumper','Altri ricambi controller'];
+  var TAB_MAN = null;
+  function tabManArms(){
+    if(TAB_MAN) return TAB_MAN;
+    TAB_MAN = {'STE80885':['SR-404HC','SR-405HC','SR-624HC']};
+    Object.keys(MODELS).forEach(function(sk){
+      var cs = MODELS[sk].controllers;
+      Object.keys(cs).forEach(function(ck){
+        var arms = cs[ck].arms || {};
+        Object.keys(arms).forEach(function(a){
+          var m = arms[a]; if(!TAB_MAN[m]) TAB_MAN[m] = [];
+          if(TAB_MAN[m].indexOf(a) < 0) TAB_MAN[m].push(a);
+        });
+      });
+    });
+    return TAB_MAN;
+  }
+  function tabModels(u){
+    var pl = CODICI_PLAB[u[0] + ':' + u[1]];
+    if(pl) return pl.split(' / ');
+    var mm = tabManArms()[u[0]];
+    if(mm && mm.length) return mm;
+    var lb = CODICI_LAB[u[0]];
+    if(lb && !/^Controller/i.test(lb)) return [lb];
+    return null;
+  }
+  function tabBuild(kind){
+    codBuild();
+    var cats = {}, rows = 0;
+    CODICI.forEach(function(g){
+      var isCtl = TAB_CTL_RE.test(g[0]);
+      if((kind === 'ctl') !== isCtl) return;
+      var mods = {}, order = [];
+      g[2].forEach(function(u){
+        var names = kind === 'ctl' ? (u[3] ? u[3].split(' / ') : null) : tabModels(u);
+        if(!names) return;
+        var ax = u[2] || '';
+        names.forEach(function(nm){
+          nm = nm.replace(/\s+/g, ' ').trim(); if(!nm) return;
+          if(!mods[nm]){ mods[nm] = []; order.push(nm); }
+          if(ax && mods[nm].indexOf(ax) < 0) mods[nm].push(ax);
+        });
+      });
+      if(!order.length) return;
+      var dwg = [], unit = [], model = [];
+      g[1].forEach(function(c){ (c[1] === 'dwg' ? dwg : c[1] === 'unit' ? unit : model).push(c[0]); });
+      var all = dwg.concat(unit, model), main = all[0];
+      if(!TAB_ALL && all.length < 2 && order.length < 2) return;
+      var cat = tabCat(g[0], kind);
+      (cats[cat] = cats[cat] || []).push({n:order.length, main:main, others:all.slice(1), mods:order.map(function(nm){ return {nm:nm, ax:mods[nm]}; }), kit:!!g[3], desc:g[0]});
+      rows++;
+    });
+    return {cats:cats, rows:rows};
+  }
+  function codTabOpen(kind){
+    if(kind) TAB_KIND = kind;
+    var r = tabBuild(TAB_KIND), h = '', bar = '', csv = [], cc = (TAB_KIND === 'ctl') ? 'Controller' : 'Modelli braccio e asse';
+    csv.push(['Categoria','N. modelli','Codice','Codici corrispondenti', cc].join(';'));
+    var keys = Object.keys(r.cats).sort(function(a, b){ var ia = TAB_ORD.indexOf(a), ib = TAB_ORD.indexOf(b); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib); });
+    keys.forEach(function(k, ki){
+      var list = r.cats[k].sort(function(a, b){ return b.n - a.n || (a.main < b.main ? -1 : 1); });
+      bar += '<a onclick="document.getElementById(\'tc' + ki + '\').scrollIntoView({behavior:\'smooth\'})">' + esc(k) + ' (' + list.length + ')</a>';
+      h += '<h4 id="tc' + ki + '">' + esc(k) + ' <span class="tax">· ' + list.length + '</span></h4><table><tr><th>N°</th><th>Codice</th><th>Corrispondenze</th><th>' + cc + '</th></tr>';
+      list.forEach(function(x){
+        h += '<tr><td class="n">' + x.n + '</td><td class="c">' + esc(x.main) + (x.kit ? ' <span title="insieme di pezzi">⚠️</span>' : '') + '</td><td>' + x.others.map(function(c){ return '<span class="tcode">' + esc(c) + '</span>'; }).join('') + '</td><td class="tmod">' +
+          x.mods.map(function(m){ return '<b>' + esc(m.nm) + '</b>' + (m.ax.length ? ' <span class="tax">— ' + esc(m.ax.join('; ')) + '</span>' : ''); }).join('<br>') + '</td></tr>';
+        csv.push([k, x.n, x.main, x.others.join(' | '), x.mods.map(function(m){ return m.nm + (m.ax.length ? ' - ' + m.ax.join('; ') : ''); }).join(' | ')].map(function(v){ return '"' + String(v).replace(/"/g, '""') + '"'; }).join(';'));
+      });
+      h += '</table>';
+    });
+    TAB_CSV = '﻿' + csv.join('\r\n');
+    var title = (TAB_KIND === 'ctl' ? 'Ricambi controller' : 'Ricambi bracci') + ' — corrispondenze codici';
+    document.getElementById('tabTitle').textContent = title + ' (' + r.rows + ' righe)';
+    document.getElementById('tabBar').innerHTML = '<label><input type="checkbox" ' + (TAB_ALL ? 'checked ' : '') + 'onchange="TAB_ALL=this.checked;codTabOpen()"> mostra anche i pezzi con un solo codice e un solo modello</label><span style="flex:1"></span>' + bar;
+    document.getElementById('tabBody').innerHTML = (h || '<p class="cod-note">Nessun dato.</p>') +
+      '<p class="cod-note" style="margin-top:14px">N° = quanti ' + (TAB_KIND === 'ctl' ? 'controller' : 'modelli di braccio') + ' usano lo stesso pezzo. Dati letti dalle tabelle ricambi dei manuali: dove il manuale non indica l’asse la colonna resta vuota. Prima di ordinare controlla sempre la pagina del manuale.</p>';
+    document.getElementById('tabScr').classList.add('show');
+    document.getElementById('tabBody').scrollTop = 0;
+  }
+  function codTabClose(){ document.getElementById('tabScr').classList.remove('show'); }
+  function codTabCsv(){
+    try{
+      var blob = new Blob([TAB_CSV], {type:'text/csv;charset=utf-8'}), a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = 'corrispondenze_ricambi_' + (TAB_KIND === 'ctl' ? 'controller' : 'bracci') + '.csv';
+      document.body.appendChild(a); a.click(); setTimeout(function(){ document.body.removeChild(a); }, 500);
+    }catch(e){ showToast('Download non riuscito su questo dispositivo'); }
+  }
 
   /* ===== Selezione di un codice nel PDF -> tasto Corrispondenze ===== */
   var selCodTimer = null, selCodTxt = '';
@@ -1947,7 +2100,18 @@ var CODICI_PLAB={"STE85357:309":"THL300 / THL400","STE85357:310":"THL500 / THL60
 
           <div class="cols">
             <div>
-              <div class="v-title current">v49 <span class="date">(27/10)</span></div>
+              <div class="v-title current">v51 <span class="date">(27/10)</span></div>
+              <div class="v-body">
+                • Codici ricambi: nuovi tasti <b>Tabella ricambi bracci</b> e <b>Tabella ricambi controller</b> (corrispondenze per categoria, con N° modelli e asse; scarico Excel/CSV)<br>
+                • Serie SR: tolto il controller TS3000 / TS3100 (non esiste per i robot SR)
+              </div>
+
+              <div class="v-title">v50 <span class="date">(27/10)</span></div>
+              <div class="v-body">
+                • Traduzione PDF: controllata su 570 pagine; niente più scritte giganti sugli schemi, testi minuscoli e doppioni lasciati in originale
+              </div>
+
+              <div class="v-title">v49 <span class="date">(27/10)</span></div>
               <div class="v-body">
                 • Traduzione PDF: frasi su più colonne non si sovrappongono più; parole non spezzate a metà
               </div>
@@ -2123,7 +2287,7 @@ var CODICI_PLAB={"STE85357:309":"THL300 / THL400","STE85357:310":"THL500 / THL60
   });
 </script>
 <div class="app-footer">
-  <span class="ver" onclick="showAbout()" style="cursor:pointer" title="Info e cronologia versioni">v49 &nbsp;ⓘ</span>
+  <span class="ver" onclick="showAbout()" style="cursor:pointer" title="Info e cronologia versioni">v51 &nbsp;ⓘ</span>
   <span class="net" id="netBadge"><i></i><span id="netTxt">Online</span></span>
   <span class="logo"><span class="dot"></span>TR/software</span>
 </div>
