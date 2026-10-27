@@ -1484,7 +1484,8 @@ var CODICI_PLAB={"STE85357:309":"THL300 / THL400","STE85357:310":"THL500 / THL60
       var all = dwg.concat(unit, model), main = all[0];
       if(!TAB_ALL && all.length < 2 && order.length < 2) return;
       var cat = tabCat(g[0], kind);
-      (cats[cat] = cats[cat] || []).push({n:order.length, main:main, others:all.slice(1), mods:order.map(function(nm){ return {nm:nm, ax:mods[nm], arms:mods[nm].arms || []}; }), kit:!!g[3], desc:g[0]});
+      var armU = []; order.forEach(function(nm){ (mods[nm].arms || []).forEach(function(a){ if(armU.indexOf(a) < 0) armU.push(a); }); });
+      (cats[cat] = cats[cat] || []).push({n:order.length, na:armU.length, main:main, others:all.slice(1), mods:order.map(function(nm){ return {nm:nm, ax:mods[nm], arms:mods[nm].arms || []}; }), kit:!!g[3], desc:g[0]});
       rows++;
     });
     return {cats:cats, rows:rows};
@@ -1492,16 +1493,16 @@ var CODICI_PLAB={"STE85357:309":"THL300 / THL400","STE85357:310":"THL500 / THL60
   function codTabOpen(kind){
     if(kind) TAB_KIND = kind;
     var r = tabBuild(TAB_KIND), h = '', bar = '', csv = [], cc = (TAB_KIND === 'ctl') ? 'Controller e bracci abbinati' : 'Modelli braccio e asse';
-    csv.push(['Categoria','N. modelli','Codice','Codici corrispondenti', cc].join(';'));
+    csv.push(['Categoria', TAB_KIND === 'ctl' ? 'N. controller' : 'N. modelli'].concat(TAB_KIND === 'ctl' ? ['N. bracci'] : [], ['Codice','Codici corrispondenti', cc]).join(';'));
     var keys = Object.keys(r.cats).sort(function(a, b){ var ia = TAB_ORD.indexOf(a), ib = TAB_ORD.indexOf(b); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib); });
     keys.forEach(function(k, ki){
-      var list = r.cats[k].sort(function(a, b){ return b.n - a.n || (a.main < b.main ? -1 : 1); });
+      var list = r.cats[k].sort(function(a, b){ return (TAB_KIND === 'ctl' ? (b.na - a.na) : 0) || b.n - a.n || (a.main < b.main ? -1 : 1); });
       bar += '<a onclick="document.getElementById(\'tc' + ki + '\').scrollIntoView({behavior:\'smooth\'})">' + esc(k) + ' (' + list.length + ')</a>';
-      h += '<h4 id="tc' + ki + '">' + esc(k) + ' <span class="tax">· ' + list.length + '</span></h4><table><tr><th>N°</th><th>Codice</th><th>Corrispondenze</th><th>' + cc + '</th></tr>';
+      h += '<h4 id="tc' + ki + '">' + esc(k) + ' <span class="tax">· ' + list.length + '</span></h4><table><tr><th>' + (TAB_KIND === 'ctl' ? 'N° controller</th><th>N° bracci' : 'N°') + '</th><th>Codice</th><th>Corrispondenze</th><th>' + cc + '</th></tr>';
       list.forEach(function(x){
-        h += '<tr><td class="n">' + x.n + '</td><td class="c">' + esc(x.main) + (x.kit ? ' <span title="insieme di pezzi">⚠️</span>' : '') + '</td><td>' + x.others.map(function(c){ return '<span class="tcode">' + esc(c) + '</span>'; }).join('') + '</td><td class="tmod">' +
+        h += '<tr><td class="n">' + x.n + '</td>' + (TAB_KIND === 'ctl' ? '<td class="n">' + (x.na || '\u2013') + '</td>' : '') + '<td class="c">' + esc(x.main) + (x.kit ? ' <span title="insieme di pezzi">⚠️</span>' : '') + '</td><td>' + x.others.map(function(c){ return '<span class="tcode">' + esc(c) + '</span>'; }).join('') + '</td><td class="tmod">' +
           x.mods.map(function(m){ return '<b>' + esc(m.nm) + '</b>' + (m.ax.length ? ' <span class="tax">— ' + esc(m.ax.join('; ')) + '</span>' : '') + (TAB_KIND === 'ctl' && m.arms.length ? '<br><span class="tax">🤖 Bracci abbinati: ' + esc(m.arms.join(', ')) + '</span>' : ''); }).join('<br>') + '</td></tr>';
-        csv.push([k, x.n, x.main, x.others.join(' | '), x.mods.map(function(m){ return m.nm + (m.ax.length ? ' - ' + m.ax.join('; ') : '') + (TAB_KIND === 'ctl' && m.arms.length ? ' [bracci: ' + m.arms.join(', ') + ']' : ''); }).join(' | ')].map(function(v){ return '"' + String(v).replace(/"/g, '""') + '"'; }).join(';'));
+        csv.push([k, x.n].concat(TAB_KIND === 'ctl' ? [x.na] : [], [x.main, x.others.join(' | '), x.mods.map(function(m){ return m.nm + (m.ax.length ? ' - ' + m.ax.join('; ') : '') + (TAB_KIND === 'ctl' && m.arms.length ? ' [bracci: ' + m.arms.join(', ') + ']' : ''); }).join(' | ')]).map(function(v){ return '"' + String(v).replace(/"/g, '""') + '"'; }).join(';'));
       });
       h += '</table>';
     });
@@ -1510,7 +1511,7 @@ var CODICI_PLAB={"STE85357:309":"THL300 / THL400","STE85357:310":"THL500 / THL60
     document.getElementById('tabTitle').textContent = title + ' (' + r.rows + ' righe)';
     document.getElementById('tabBar').innerHTML = '<label><input type="checkbox" ' + (TAB_ALL ? 'checked ' : '') + 'onchange="TAB_ALL=this.checked;codTabOpen()"> mostra anche i pezzi con un solo codice e un solo modello</label><span style="flex:1"></span>' + bar;
     document.getElementById('tabBody').innerHTML = (h || '<p class="cod-note">Nessun dato.</p>') +
-      '<p class="cod-note" style="margin-top:14px">N° = quanti ' + (TAB_KIND === 'ctl' ? 'controller' : 'modelli di braccio') + ' usano lo stesso pezzo. Dati letti dalle tabelle ricambi dei manuali: dove il manuale non indica l’asse la colonna resta vuota. Prima di ordinare controlla sempre la pagina del manuale.</p>';
+      '<p class="cod-note" style="margin-top:14px">N° = quanti ' + (TAB_KIND === 'ctl' ? 'controller' : 'modelli di braccio') + ' usano lo stesso pezzo' + (TAB_KIND === 'ctl' ? '; N° bracci = quanti bracci diversi risultano abbinati a quei controller nei manuali' : '') + '. Dati letti dalle tabelle ricambi dei manuali: dove il manuale non indica l’asse la colonna resta vuota. Prima di ordinare controlla sempre la pagina del manuale.</p>';
     document.getElementById('tabScr').classList.add('show');
     document.getElementById('tabBody').scrollTop = 0;
   }
@@ -2121,7 +2122,12 @@ var CODICI_PLAB={"STE85357:309":"THL300 / THL400","STE85357:310":"THL500 / THL60
 
           <div class="cols">
             <div>
-              <div class="v-title current">v52 <span class="date">(27/10)</span></div>
+              <div class="v-title current">v53 <span class="date">(27/10)</span></div>
+              <div class="v-body">
+                • Tabella ricambi controller: aggiunta la colonna <b>N° bracci</b> (prima il N° contava solo i controller)
+              </div>
+
+              <div class="v-title">v52 <span class="date">(27/10)</span></div>
               <div class="v-body">
                 • Tabella ricambi controller: aggiunti i <b>bracci abbinati</b> a ogni controller
               </div>
@@ -2313,7 +2319,7 @@ var CODICI_PLAB={"STE85357:309":"THL300 / THL400","STE85357:310":"THL500 / THL60
   });
 </script>
 <div class="app-footer">
-  <span class="ver" onclick="showAbout()" style="cursor:pointer" title="Info e cronologia versioni">v52 &nbsp;ⓘ</span>
+  <span class="ver" onclick="showAbout()" style="cursor:pointer" title="Info e cronologia versioni">v53 &nbsp;ⓘ</span>
   <span class="net" id="netBadge"><i></i><span id="netTxt">Online</span></span>
   <span class="logo"><span class="dot"></span>TR/software</span>
 </div>
