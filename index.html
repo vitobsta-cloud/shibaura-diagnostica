@@ -214,6 +214,18 @@
           @page { margin:8mm; }
         }
         .pdf-zbtn.prt { font-size:1rem; }
+
+        .app-footer .net { background:white; padding:3px 10px; border-radius:10px; font-weight:600; font-size:.72rem; color:#555; box-shadow:0 1px 4px rgba(0,0,0,0.08); pointer-events:none; display:inline-flex; align-items:center; gap:5px; }
+        .app-footer .net i { width:8px; height:8px; border-radius:50%; background:#2e9e5b; display:inline-block; }
+        .app-footer .net.off { color:#b3261e; } .app-footer .net.off i { background:#d32f2f; }
+        .tr-off { opacity:.45; }
+        .tr-body { max-height:55vh; overflow:auto; font-size:.88rem; line-height:1.45; white-space:pre-wrap; background:#f7f8fb; border-radius:10px; padding:10px; margin-bottom:10px; color:#1a1a2e; }
+        .pm-box.wide { max-width:560px; }
+        .pdf-tr-layer { position:absolute; left:0; top:0; right:0; bottom:0; pointer-events:none; z-index:6; }
+        .pdf-tr-box { position:absolute; background:#fff; color:#111; font-family:Arial,Helvetica,sans-serif; line-height:1.12; overflow:hidden; box-sizing:border-box; padding:0 1px; word-break:break-word; }
+        .pdf-trfab { position:absolute; left:50%; transform:translateX(-50%); bottom:calc(64px + env(safe-area-inset-bottom)); z-index:20; border:none; border-radius:22px; padding:9px 18px; font-size:.85rem; font-weight:700; font-family:inherit; color:#fff; background:rgba(26,26,46,.88); box-shadow:0 3px 12px rgba(0,0,0,.35); cursor:pointer; white-space:nowrap; backdrop-filter:blur(4px); }
+        .pdf-trfab:active { background:rgba(26,26,46,1); }
+        .pdf-trfab.on { background:#e94560; }
         .pm-back { position:fixed; inset:0; background:rgba(10,12,24,.55); z-index:3000; display:none; align-items:center; justify-content:center; padding:16px; }
         .pm-back.show { display:flex; }
         .pm-box { background:#fff; border-radius:16px; padding:18px; width:100%; max-width:340px; box-shadow:0 10px 40px rgba(0,0,0,.35); font-family:inherit; }
@@ -351,6 +363,7 @@
           </div>
         </div>
       </div>
+      <button class="pdf-trfab tr-btn" id="pdfTrBtn" onclick="pdfTranslatePage()" title="Traduci la pagina in italiano">🇮🇹 Traduci</button>
       <form class="pdf-searchbar" onsubmit="pdfDoSearch();return false">
         <input id="pdfSearchInput" type="search" placeholder="Cerca nel PDF…" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search">
         <span id="pdfSearchInfo" class="pdf-search-info"></span>
@@ -409,6 +422,14 @@
       <button class="pm-btn main" onclick="pdfPrintRun()">Stampa</button>
       <button class="pm-btn" onclick="closePrintModal()">Annulla</button>
     </div>
+  </div>
+</div>
+<div class="pm-back" id="transModal" onclick="if(event.target===this)closeTransModal()">
+  <div class="pm-box wide">
+    <h3>🌐 Traduzione in italiano</h3>
+    <p id="transInfo">—</p>
+    <div class="tr-body" id="transBody"></div>
+    <div class="pm-btns"><button class="pm-btn" onclick="closeTransModal()">Chiudi</button></div>
   </div>
 </div>
 <div class="pm-back" id="langModal" onclick="if(event.target===this)closeLangModal()">
@@ -714,7 +735,7 @@
     if(!pdfDoc) return;
     if(pdfRenderingBusy){ pdfPendingPage = num; return; }
     pdfRenderingBusy = true;
-    pdfCurPage = num;
+    pdfCurPage = num; pdfTrClear();
 
     document.getElementById('pdfCurPage').textContent = num;
     document.getElementById('pdfTitle').textContent = pdfFilename;
@@ -1024,6 +1045,157 @@
     list.forEach(function(x){ var b=document.createElement('button'); b.className='pm-btn'; b.textContent=x[1]; b.onclick=function(){ closeLangModal(); openPdf(x[0]); }; box.appendChild(b); });
     document.getElementById('langModal').classList.add('show');
   }
+  /* ===== Rete + traduzione pagina PDF ===== */
+  function netUpdate(){
+    var on = navigator.onLine !== false;
+    var b = document.getElementById('netBadge');
+    if(b){ b.classList.toggle('off', !on); document.getElementById('netTxt').textContent = on ? 'Online' : 'Offline'; }
+    document.querySelectorAll('.tr-btn').forEach(function(x){ x.classList.toggle('tr-off', !on); });
+  }
+  window.addEventListener('online', function(){ netUpdate(); showToast('🟢 Connessione tornata'); });
+  window.addEventListener('offline', function(){ netUpdate(); showToast('🔴 Sei offline: traduzione non disponibile'); });
+  function closeTransModal(){ document.getElementById('transModal').classList.remove('show'); }
+  async function gTranslate(q){
+    var r = await fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=it&dt=t&q=' + encodeURIComponent(q));
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    var d = await r.json();
+    return d[0].map(function(x){ return x[0]; }).join('');
+  }
+  async function transChunk(q){
+    try{ return await gTranslate(q); }catch(e){ return await translateText(q); }
+  }
+  var pdfTransCache = {};
+  async function pdfTranslateDialog(){
+    if(!pdfDoc){ showToast('Apri prima un PDF'); return; }
+    var key = pdfFilename + '#' + pdfCurPage;
+    var body = document.getElementById('transBody'), info = document.getElementById('transInfo');
+    info.textContent = pdfFilename + ' — pagina ' + pdfCurPage;
+    document.getElementById('transModal').classList.add('show');
+    if(pdfTransCache[key]){ body.textContent = pdfTransCache[key]; return; }
+    if(navigator.onLine === false){ body.textContent = '🔴 Sei offline: la traduzione richiede la connessione internet.'; return; }
+    body.textContent = 'Traduzione in corso…';
+    try{
+      var pg = await pdfDoc.getPage(pdfCurPage), tc = await pg.getTextContent(), txt = '';
+      tc.items.forEach(function(it){ if(it.str !== undefined) txt += it.str + (it.hasEOL ? ' ' : ' '); });
+      txt = txt.replace(/\s+/g, ' ').trim();
+      if(!txt){ body.textContent = 'Questa pagina non contiene testo (è un\'immagine), non posso tradurla.'; return; }
+      var chunks = [], buf = '';
+      txt.split(/(?<=[.!?])\s+/).forEach(function(s){
+        if((buf + ' ' + s).length > 900 && buf){ chunks.push(buf); buf = s; } else buf = buf ? buf + ' ' + s : s;
+      });
+      if(buf) chunks.push(buf);
+      var out = [];
+      for(var i = 0; i < chunks.length; i++){
+        body.textContent = 'Traduzione in corso… ' + (i + 1) + '/' + chunks.length;
+        out.push(await transChunk(chunks[i]));
+      }
+      pdfTransCache[key] = out.join('\n\n');
+      body.textContent = pdfTransCache[key];
+    }catch(e){
+      body.textContent = '⚠️ Traduzione non riuscita: ' + (e.message || 'controlla la connessione') + '. Riprova.';
+    }
+  }
+  setTimeout(netUpdate, 0);
+
+  /* ===== Traduzione sulla pagina (testo sostituito al suo posto) ===== */
+  var pdfTrOn = false, pdfTrBusy = false, pdfTrMem = {};
+  function pdfTrClear(){
+    var l = document.getElementById('pdfTrLayer'); if(l) l.remove();
+    pdfTrOn = false;
+    var b = document.getElementById('pdfTrBtn'); if(b){ b.textContent = '🇮🇹 Traduci'; b.classList.remove('on'); }
+  }
+  function pdfTrNeeds(t){
+    if(/[぀-ヿ一-鿿]/.test(t)) return true;
+    if(!/[A-Za-z]{3,}/.test(t)) return false;
+    if(/^[A-Z0-9][A-Z0-9\-\/\. ]*$/.test(t) && /\d/.test(t)) return false;
+    return true;
+  }
+  function pdfBuildParas(wrapper){
+    var wr = wrapper.getBoundingClientRect(), sc = wr.width / (wrapper.offsetWidth || 1) || 1, items = [];
+    for(var i = 0; i < pdfCurDivs.length; i++){
+      var d = pdfCurDivs[i], s = d.textContent || '';
+      if(!s.trim()) continue;
+      var rc = d.getBoundingClientRect(); if(rc.width <= 0 || rc.height <= 0) continue;
+      items.push({l:(rc.left - wr.left)/sc, t:(rc.top - wr.top)/sc, r:(rc.right - wr.left)/sc, b:(rc.bottom - wr.top)/sc, h:rc.height/sc, s:s});
+    }
+    items.sort(function(a, b){ return (a.t - b.t) || (a.l - b.l); });
+    var lines = [];
+    items.forEach(function(it){
+      var cy = (it.t + it.b)/2, ln = null;
+      for(var j = lines.length - 1; j >= 0 && j >= lines.length - 40; j--){
+        var L = lines[j], gap = it.l - L.r;
+        if(Math.abs(cy - (L.t + L.b)/2) < 0.45 * Math.min(it.h, L.h) && gap > -3 && gap < 0.9 * Math.max(it.h, L.h)){ ln = L; break; }
+      }
+      if(ln){
+        var g = it.l - ln.r;
+        ln.s += (g > 0.12 * it.h ? ' ' : '') + it.s; ln.r = Math.max(ln.r, it.r); ln.t = Math.min(ln.t, it.t); ln.b = Math.max(ln.b, it.b); ln.h = Math.max(ln.h, it.h);
+      } else lines.push({l:it.l, t:it.t, r:it.r, b:it.b, h:it.h, s:it.s});
+    });
+    lines.sort(function(a, b){ return (a.t - b.t) || (a.l - b.l); });
+    var paras = [];
+    lines.forEach(function(ln){
+      var P = null, cy = (ln.t + ln.b)/2;
+      for(var j = paras.length - 1; j >= 0 && j >= paras.length - 40; j--){
+        var p = paras[j], last = p.last, dy = cy - (last.t + last.b)/2, ratio = ln.h / last.h;
+        if(dy > 0.7 * last.h && dy < 1.7 * last.h && Math.abs(ln.l - last.l) <= 0.6 * last.h && ratio > 0.75 && ratio < 1.33 && ln.l < p.r && ln.r > p.l){ P = p; break; }
+      }
+      if(P){ P.s += ' ' + ln.s; P.l = Math.min(P.l, ln.l); P.r = Math.max(P.r, ln.r); P.b = Math.max(P.b, ln.b); P.last = ln; P.n++; }
+      else paras.push({l:ln.l, t:ln.t, r:ln.r, b:ln.b, h:ln.h, s:ln.s, last:ln, n:1});
+    });
+    return paras;
+  }
+  async function pdfTranslateParaText(txt){
+    txt = txt.replace(/\s+/g, ' ').trim();
+    if(pdfTrMem[txt]) return pdfTrMem[txt];
+    var chunks = [], buf = '';
+    txt.split(/(?<=[.!?])\s+/).forEach(function(s){
+      if((buf + ' ' + s).length > 900 && buf){ chunks.push(buf); buf = s; } else buf = buf ? buf + ' ' + s : s;
+    });
+    if(buf) chunks.push(buf);
+    var out = [];
+    for(var i = 0; i < chunks.length; i++) out.push(await transChunk(chunks[i]));
+    return (pdfTrMem[txt] = out.join(' '));
+  }
+  async function pdfTranslatePage(){
+    if(!pdfDoc){ showToast('Apri prima un PDF'); return; }
+    if(pdfTrBusy) return;
+    if(pdfTrOn){ pdfTrClear(); return; }
+    if(navigator.onLine === false){ showToast('🔴 Offline: la traduzione richiede internet'); return; }
+    var wrapper = document.getElementById('pdfPageWrapper'), btn = document.getElementById('pdfTrBtn'), num = pdfCurPage;
+    if(!wrapper || !pdfCurDivs || !pdfCurDivs.length){ showToast('Pagina senza testo (è un’immagine): non posso tradurla'); return; }
+    pdfTrBusy = true; btn.textContent = '⏳ Traduco…';
+    try{
+      var paras = pdfBuildParas(wrapper), todo = paras.filter(function(p){ return pdfTrNeeds(p.s); }), done = 0, fails = 0, idx = 0;
+      if(!todo.length){ showToast('Nessun testo da tradurre in questa pagina'); btn.textContent = '🇮🇹 Traduci'; pdfTrBusy = false; return; }
+      async function worker(){
+        while(idx < todo.length){
+          var p = todo[idx++];
+          try{ p.it = await pdfTranslateParaText(p.s); }catch(e){ fails++; }
+          done++; if(pdfCurPage === num) btn.textContent = '⏳ ' + done + '/' + todo.length;
+        }
+      }
+      await Promise.all([worker(), worker(), worker(), worker()]);
+      if(pdfCurPage !== num) return;
+      if(fails === todo.length){ showToast('⚠️ Traduzione non riuscita: controlla la connessione'); btn.textContent = '🇮🇹 Traduci'; return; }
+      var layer = document.createElement('div'); layer.className = 'pdf-tr-layer'; layer.id = 'pdfTrLayer';
+      wrapper.appendChild(layer);
+      todo.forEach(function(p){
+        if(!p.it) return;
+        var el = document.createElement('div'); el.className = 'pdf-tr-box'; el.textContent = p.it;
+        var w = p.r - p.l + 2, h = p.b - p.t + 2;
+        el.style.left = (p.l - 1) + 'px'; el.style.top = (p.t - 1) + 'px'; el.style.width = w + 'px'; el.style.height = h + 'px';
+        var fs = Math.max(5, p.last.h * 0.86); el.style.fontSize = fs + 'px';
+        layer.appendChild(el);
+        var guard = 0;
+        while((el.scrollHeight > h + 1 || el.scrollWidth > w + 1) && fs > 3.5 && guard++ < 60){ fs -= 0.4; el.style.fontSize = fs + 'px'; }
+      });
+      pdfTrOn = true; btn.textContent = '🇬🇧 Originale'; btn.classList.add('on');
+      if(fails) showToast('⚠️ ' + fails + ' blocchi non tradotti');
+    }catch(e){
+      showToast('⚠️ Traduzione non riuscita'); btn.textContent = '🇮🇹 Traduci';
+    }finally{ pdfTrBusy = false; }
+  }
+
   function pdfPrevPage(){ if(pdfCurPage > 1) renderPdfPage(pdfCurPage - 1); }
   function pdfNextPage(){ if(pdfCurPage < pdfTotPages) renderPdfPage(pdfCurPage + 1); }
 
@@ -1425,7 +1597,7 @@
     if(isIT){
       h+=`<button class="action-btn pdf" onclick="showOriginal()" style="font-size:0.78rem;">🇬🇧 Originale</button>`;
     } else {
-      h+=`<button class="action-btn cause" onclick="translateAlarm('${a.code}')" style="font-size:0.78rem;">🇮🇹 Traduci</button>`;
+      h+=`<button class="action-btn cause ${transCache[a.code]?'':'tr-btn'}" onclick="translateAlarm('${a.code}')" style="font-size:0.78rem;">🇮🇹 Traduci</button>`;
     }
     h+=`</div>`;
     h+=`<div style="font-size:1.05rem;font-weight:800;color:#1a1a2e;margin-bottom:2px;">${esc(isIT&&tr.title?tr.title:a.title)}</div>`;
@@ -1441,6 +1613,7 @@
     h+=`<button class="action-btn solution" onclick="openPdf(curMaint)">📖 Manuale ${esc(curArm)} (${curMaint})</button>`;
     h+='</div></div>';
     document.getElementById('resultArea').innerHTML=h;
+    if(typeof netUpdate==='function') netUpdate();
     if(!isIT) showPopup(a.code,a.title);
   }
 
@@ -1499,6 +1672,7 @@
       showToast('🇮🇹 Dalla cache');
       return;
     }
+    if(navigator.onLine===false){ showToast('🔴 Offline: traduzione non disponibile'); return; }
     const{a,cc,alarmCode}=lastRendered;
     document.getElementById('resultArea').innerHTML=
       `<div class="result-card" style="text-align:center;padding:30px;">
@@ -1572,7 +1746,18 @@
 
           <div class="cols">
             <div>
-              <div class="v-title current">v40 <span class="date">(26/10)</span></div>
+              <div class="v-title current">v42 <span class="date">(27/10)</span></div>
+              <div class="v-body">
+                • Badge <b>Online / Offline</b> in basso<br>
+                • Tasto <b>🇮🇹 Traduci</b> in basso nel PDF: rigenera la pagina con il testo <b>tradotto in italiano</b> al suo posto (serve internet); ripremi per tornare alla pagina originale
+              </div>
+
+              <div class="v-title">v41 <span class="date">(27/10)</span></div>
+              <div class="v-body">
+                • Windows: il programma parte a <b>finestra intera</b>
+              </div>
+
+              <div class="v-title">v40 <span class="date">(26/10)</span></div>
               <div class="v-body">
                 • <b>Stampa PDF</b>: tasto 🖨 in alto nel manuale, scegli da pagina a pagina<br>
                 • Manuale linguaggio TS3000/TS3100: scelta <b>inglese / italiano</b>
@@ -1699,7 +1884,8 @@
   });
 </script>
 <div class="app-footer">
-  <span class="ver" onclick="showAbout()" style="cursor:pointer" title="Info e cronologia versioni">v40 &nbsp;ⓘ</span>
+  <span class="ver" onclick="showAbout()" style="cursor:pointer" title="Info e cronologia versioni">v42 &nbsp;ⓘ</span>
+  <span class="net" id="netBadge"><i></i><span id="netTxt">Online</span></span>
   <span class="logo"><span class="dot"></span>TR/software</span>
 </div>
 
