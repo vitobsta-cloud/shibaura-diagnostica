@@ -1431,6 +1431,24 @@ var CODICI_PLAB={"STE85357:309":"THL300 / THL400","STE85357:310":"THL500 / THL60
     });
     return TAB_MAN;
   }
+  var TAB_MC = null;
+  function tabArmsFor(man, nm){
+    if(!TAB_MC){
+      TAB_MC = {};
+      Object.keys(MODELS).forEach(function(sk){
+        var cs = MODELS[sk].controllers;
+        Object.keys(cs).forEach(function(ck){
+          var arms = cs[ck].arms || {};
+          Object.keys(arms).forEach(function(a){
+            var m = arms[a]; (TAB_MC[m] = TAB_MC[m] || []).push({k:ck.replace(/\s+/g, ''), a:a});
+          });
+        });
+      });
+    }
+    var base = nm.replace(/\s+/g, '').replace(/E$/, ''), out = [];
+    (TAB_MC[man] || []).forEach(function(x){ if(x.k.indexOf(base) >= 0 && out.indexOf(x.a) < 0) out.push(x.a); });
+    return out;
+  }
   function tabModels(u){
     var pl = CODICI_PLAB[u[0] + ':' + u[1]];
     if(pl) return pl.split(' / ');
@@ -1453,8 +1471,11 @@ var CODICI_PLAB={"STE85357:309":"THL300 / THL400","STE85357:310":"THL500 / THL60
         var ax = u[2] || '';
         names.forEach(function(nm){
           nm = nm.replace(/\s+/g, ' ').trim(); if(!nm) return;
-          if(!mods[nm]){ mods[nm] = []; order.push(nm); }
+          var ab = [];
+          if(kind === 'ctl'){ ab = tabArmsFor(u[0], nm); if(!ab.length && !tabManArms()[u[0]]){ var lb = CODICI_LAB[u[0]]; if(lb && !/^Controller/i.test(lb)) ab = [lb]; } }
+          if(!mods[nm]){ mods[nm] = []; mods[nm].arms = []; order.push(nm); }
           if(ax && mods[nm].indexOf(ax) < 0) mods[nm].push(ax);
+          ab.forEach(function(a){ if(mods[nm].arms.indexOf(a) < 0) mods[nm].arms.push(a); });
         });
       });
       if(!order.length) return;
@@ -1463,14 +1484,14 @@ var CODICI_PLAB={"STE85357:309":"THL300 / THL400","STE85357:310":"THL500 / THL60
       var all = dwg.concat(unit, model), main = all[0];
       if(!TAB_ALL && all.length < 2 && order.length < 2) return;
       var cat = tabCat(g[0], kind);
-      (cats[cat] = cats[cat] || []).push({n:order.length, main:main, others:all.slice(1), mods:order.map(function(nm){ return {nm:nm, ax:mods[nm]}; }), kit:!!g[3], desc:g[0]});
+      (cats[cat] = cats[cat] || []).push({n:order.length, main:main, others:all.slice(1), mods:order.map(function(nm){ return {nm:nm, ax:mods[nm], arms:mods[nm].arms || []}; }), kit:!!g[3], desc:g[0]});
       rows++;
     });
     return {cats:cats, rows:rows};
   }
   function codTabOpen(kind){
     if(kind) TAB_KIND = kind;
-    var r = tabBuild(TAB_KIND), h = '', bar = '', csv = [], cc = (TAB_KIND === 'ctl') ? 'Controller' : 'Modelli braccio e asse';
+    var r = tabBuild(TAB_KIND), h = '', bar = '', csv = [], cc = (TAB_KIND === 'ctl') ? 'Controller e bracci abbinati' : 'Modelli braccio e asse';
     csv.push(['Categoria','N. modelli','Codice','Codici corrispondenti', cc].join(';'));
     var keys = Object.keys(r.cats).sort(function(a, b){ var ia = TAB_ORD.indexOf(a), ib = TAB_ORD.indexOf(b); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib); });
     keys.forEach(function(k, ki){
@@ -1479,8 +1500,8 @@ var CODICI_PLAB={"STE85357:309":"THL300 / THL400","STE85357:310":"THL500 / THL60
       h += '<h4 id="tc' + ki + '">' + esc(k) + ' <span class="tax">· ' + list.length + '</span></h4><table><tr><th>N°</th><th>Codice</th><th>Corrispondenze</th><th>' + cc + '</th></tr>';
       list.forEach(function(x){
         h += '<tr><td class="n">' + x.n + '</td><td class="c">' + esc(x.main) + (x.kit ? ' <span title="insieme di pezzi">⚠️</span>' : '') + '</td><td>' + x.others.map(function(c){ return '<span class="tcode">' + esc(c) + '</span>'; }).join('') + '</td><td class="tmod">' +
-          x.mods.map(function(m){ return '<b>' + esc(m.nm) + '</b>' + (m.ax.length ? ' <span class="tax">— ' + esc(m.ax.join('; ')) + '</span>' : ''); }).join('<br>') + '</td></tr>';
-        csv.push([k, x.n, x.main, x.others.join(' | '), x.mods.map(function(m){ return m.nm + (m.ax.length ? ' - ' + m.ax.join('; ') : ''); }).join(' | ')].map(function(v){ return '"' + String(v).replace(/"/g, '""') + '"'; }).join(';'));
+          x.mods.map(function(m){ return '<b>' + esc(m.nm) + '</b>' + (m.ax.length ? ' <span class="tax">— ' + esc(m.ax.join('; ')) + '</span>' : '') + (TAB_KIND === 'ctl' && m.arms.length ? '<br><span class="tax">🤖 Bracci abbinati: ' + esc(m.arms.join(', ')) + '</span>' : ''); }).join('<br>') + '</td></tr>';
+        csv.push([k, x.n, x.main, x.others.join(' | '), x.mods.map(function(m){ return m.nm + (m.ax.length ? ' - ' + m.ax.join('; ') : '') + (TAB_KIND === 'ctl' && m.arms.length ? ' [bracci: ' + m.arms.join(', ') + ']' : ''); }).join(' | ')].map(function(v){ return '"' + String(v).replace(/"/g, '""') + '"'; }).join(';'));
       });
       h += '</table>';
     });
@@ -2100,7 +2121,12 @@ var CODICI_PLAB={"STE85357:309":"THL300 / THL400","STE85357:310":"THL500 / THL60
 
           <div class="cols">
             <div>
-              <div class="v-title current">v51 <span class="date">(27/10)</span></div>
+              <div class="v-title current">v52 <span class="date">(27/10)</span></div>
+              <div class="v-body">
+                • Tabella ricambi controller: aggiunti i <b>bracci abbinati</b> a ogni controller
+              </div>
+
+              <div class="v-title">v51 <span class="date">(27/10)</span></div>
               <div class="v-body">
                 • Codici ricambi: nuovi tasti <b>Tabella ricambi bracci</b> e <b>Tabella ricambi controller</b> (corrispondenze per categoria, con N° modelli e asse; scarico Excel/CSV)<br>
                 • Serie SR: tolto il controller TS3000 / TS3100 (non esiste per i robot SR)
@@ -2287,7 +2313,7 @@ var CODICI_PLAB={"STE85357:309":"THL300 / THL400","STE85357:310":"THL500 / THL60
   });
 </script>
 <div class="app-footer">
-  <span class="ver" onclick="showAbout()" style="cursor:pointer" title="Info e cronologia versioni">v51 &nbsp;ⓘ</span>
+  <span class="ver" onclick="showAbout()" style="cursor:pointer" title="Info e cronologia versioni">v52 &nbsp;ⓘ</span>
   <span class="net" id="netBadge"><i></i><span id="netTxt">Online</span></span>
   <span class="logo"><span class="dot"></span>TR/software</span>
 </div>
