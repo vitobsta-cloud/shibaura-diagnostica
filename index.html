@@ -222,10 +222,25 @@
         .tr-body { max-height:55vh; overflow:auto; font-size:.88rem; line-height:1.45; white-space:pre-wrap; background:#f7f8fb; border-radius:10px; padding:10px; margin-bottom:10px; color:#1a1a2e; }
         .pm-box.wide { max-width:560px; }
         .pdf-tr-layer { position:absolute; left:0; top:0; right:0; bottom:0; pointer-events:none; z-index:6; }
-        .pdf-tr-box { position:absolute; background:#fff; color:#111; font-family:Arial,Helvetica,sans-serif; line-height:1.12; overflow:hidden; box-sizing:border-box; padding:0 1px; word-break:break-word; }
+        .pdf-tr-box { position:absolute; background:#fff; color:#111; font-family:Arial,Helvetica,sans-serif; line-height:1.12; white-space:pre-line; overflow:hidden; box-sizing:border-box; padding:0 1px; word-break:break-word; }
         .pdf-trfab { position:absolute; left:50%; transform:translateX(-50%); bottom:calc(64px + env(safe-area-inset-bottom)); z-index:20; border:none; border-radius:22px; padding:9px 18px; font-size:.85rem; font-weight:700; font-family:inherit; color:#fff; background:rgba(26,26,46,.88); box-shadow:0 3px 12px rgba(0,0,0,.35); cursor:pointer; white-space:nowrap; backdrop-filter:blur(4px); }
         .pdf-trfab:active { background:rgba(26,26,46,1); }
         .pdf-trfab.on { background:#e94560; }
+        .cod-btn { display:block; width:100%; margin:0 0 14px; padding:11px 14px; border:none; border-radius:14px; background:#1a1a2e; color:#fff; font-size:.92rem; font-weight:700; font-family:inherit; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.18); }
+        .cod-btn:active { background:#2c2c4a; }
+        .cod-in { width:100%; height:46px; border:2px solid #dfe3ec; border-radius:12px; padding:0 12px; font-size:1rem; font-family:inherit; margin-bottom:10px; box-sizing:border-box; }
+        .cod-in:focus { outline:none; border-color:#e94560; }
+        .cod-res { max-height:58vh; overflow:auto; margin-bottom:10px; }
+        .cod-card { background:#f7f8fb; border-radius:12px; padding:10px 12px; margin-bottom:8px; }
+        .cod-card h4 { margin:0 0 6px; font-size:.9rem; color:#1a1a2e; }
+        .cod-row { font-size:.84rem; color:#444; margin:2px 0; display:flex; flex-wrap:wrap; gap:4px 8px; align-items:baseline; }
+        .cod-row span.t { color:#8a90a2; font-size:.72rem; min-width:88px; }
+        .cod-chip { border:none; background:#fff; border-radius:8px; padding:3px 8px; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.86rem; font-weight:700; color:#1a1a2e; box-shadow:0 1px 3px rgba(0,0,0,.12); cursor:pointer; }
+        .cod-chip.hit { background:#e94560; color:#fff; }
+        .cod-uses { margin-top:7px; border-top:1px solid #e3e6ee; padding-top:6px; }
+        .cod-use { font-size:.78rem; color:#555; margin:3px 0; display:flex; flex-wrap:wrap; gap:4px; align-items:center; }
+        .cod-pg { border:none; background:#eef0f5; border-radius:8px; padding:3px 8px; font-size:.76rem; font-weight:700; color:#1a1a2e; cursor:pointer; font-family:inherit; }
+        .cod-note { font-size:.72rem; color:#8a90a2; margin:6px 0 0; line-height:1.35; }
         .pm-back { position:fixed; inset:0; background:rgba(10,12,24,.55); z-index:3000; display:none; align-items:center; justify-content:center; padding:16px; }
         .pm-back.show { display:flex; }
         .pm-box { background:#fff; border-radius:16px; padding:18px; width:100%; max-width:340px; box-shadow:0 10px 40px rgba(0,0,0,.35); font-family:inherit; }
@@ -296,6 +311,7 @@
     </div>
 
     <div class="breadcrumb" id="breadcrumb"></div>
+    <button class="cod-btn" id="codBtn" onclick="openCodici()">🔩 Codici ricambi · cerca le corrispondenze</button>
 
     <!-- LIVELLO 0: serie -->
     <div class="controller-grid" id="controllerGrid"></div>
@@ -430,6 +446,15 @@
     <p id="transInfo">—</p>
     <div class="tr-body" id="transBody"></div>
     <div class="pm-btns"><button class="pm-btn" onclick="closeTransModal()">Chiudi</button></div>
+  </div>
+</div>
+<div class="pm-back" id="codModal" onclick="if(event.target===this)closeCodici()">
+  <div class="pm-box wide">
+    <h3>🔩 Codici ricambi</h3>
+    <p>Scrivi un codice (disegno, unità o modello) e vedi le corrispondenze trovate nei manuali.</p>
+    <input class="cod-in" id="codIn" type="search" placeholder="Es. S948803, Y610D04P0, MSMD022S2V" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="search" oninput="codSearch()">
+    <div class="cod-res" id="codRes"></div>
+    <div class="pm-btns"><button class="pm-btn" onclick="closeCodici()">Chiudi</button></div>
   </div>
 </div>
 <div class="pm-back" id="langModal" onclick="if(event.target===this)closeLangModal()">
@@ -1132,29 +1157,58 @@
       } else lines.push({l:it.l, t:it.t, r:it.r, b:it.b, h:it.h, s:it.s});
     });
     lines.sort(function(a, b){ return (a.t - b.t) || (a.l - b.l); });
+    var LIST = /^(\s*[\uE000-\uF8FF•●○■□▪▫·]|\s*[-–—]\s|\s*\(?\d{1,3}[\.\)]\s|\s*\d+(\.\d+)+\s|\s*\d{1,3}-\d{1,3}\s|\s*[A-Z]?\d{1,3}\s*[-.]\s*\d|\s*[①-⑳])/;
     var paras = [];
     lines.forEach(function(ln){
       var P = null, cy = (ln.t + ln.b)/2;
       for(var j = paras.length - 1; j >= 0 && j >= paras.length - 40; j--){
         var p = paras[j], last = p.last, dy = cy - (last.t + last.b)/2, ratio = ln.h / last.h;
-        if(dy > 0.7 * last.h && dy < 1.7 * last.h && Math.abs(ln.l - last.l) <= 0.6 * last.h && ratio > 0.75 && ratio < 1.33 && ln.l < p.r && ln.r > p.l){ P = p; break; }
+        var hang = /^\s*[\uE000-\uF8FF•●○■□▪▫·]/.test(p.s), dl = ln.l - last.l, leftOK = Math.abs(dl) <= 0.6 * last.h || (hang && ln.l - p.fl >= -0.3 * last.h && ln.l - p.fl <= 2.5 * last.h);
+        if(!(dy > 0.7 * last.h && dy < 1.7 * last.h && leftOK && ratio > 0.75 && ratio < 1.33 && ln.l < p.r && ln.r > p.l)) continue;
+        var ls = last.s.trim(), ns = ln.s.trim();
+        var cont;
+        if(/^[a-z,;)\]]/.test(ns)) cont = true;                                  /* inizia minuscolo: continua la frase */
+        else if(LIST.test(ln.s)) cont = false;                                    /* nuovo punto elenco / numero */
+        else cont = !/[.:;!?。]\s*$/.test(ls);                                   /* la riga prima non e' finita */
+        if(cont){ P = p; break; }
       }
       if(P){ P.s += ' ' + ln.s; P.l = Math.min(P.l, ln.l); P.r = Math.max(P.r, ln.r); P.b = Math.max(P.b, ln.b); P.last = ln; P.n++; }
-      else paras.push({l:ln.l, t:ln.t, r:ln.r, b:ln.b, h:ln.h, s:ln.s, last:ln, n:1});
+      else paras.push({l:ln.l, fl:ln.l, t:ln.t, r:ln.r, b:ln.b, h:ln.h, s:ln.s, last:ln, n:1});
     });
     return paras;
   }
+  var PDF_CIRC = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩'];
   async function pdfTranslateParaText(txt){
-    txt = txt.replace(/\s+/g, ' ').trim();
-    if(pdfTrMem[txt]) return pdfTrMem[txt];
-    var chunks = [], buf = '';
-    txt.split(/(?<=[.!?])\s+/).forEach(function(s){
-      if((buf + ' ' + s).length > 900 && buf){ chunks.push(buf); buf = s; } else buf = buf ? buf + ' ' + s : s;
-    });
-    if(buf) chunks.push(buf);
+    var tok = txt.split(/([-])/), items = [], mark = null;
+    for(var i = 0; i < tok.length; i++){
+      if(i % 2 === 1){ mark = tok[i].charCodeAt(0); continue; }
+      var t = tok[i].replace(/\s+/g, ' ').trim();
+      if(t || mark !== null){ items.push({m:mark, t:t}); }
+      mark = null;
+    }
     var out = [];
-    for(var i = 0; i < chunks.length; i++) out.push(await transChunk(chunks[i]));
-    return (pdfTrMem[txt] = out.join(' '));
+    for(var q = 0; q < items.length; q++){
+      var t = items[q].t, tr = '';
+      if(t && pdfTrNeeds(t)){
+        if(pdfTrMem[t]) tr = pdfTrMem[t];
+        else{
+          var chunks = [], buf = '';
+          t.split(/(?<=[.!?])\s+/).forEach(function(s){
+            if((buf + ' ' + s).length > 900 && buf){ chunks.push(buf); buf = s; } else buf = buf ? buf + ' ' + s : s;
+          });
+          if(buf) chunks.push(buf);
+          var o = [];
+          for(var c = 0; c < chunks.length; c++) o.push(await transChunk(chunks[c]));
+          tr = pdfTrMem[t] = o.join(' ');
+        }
+      } else tr = t;
+      var m = items[q].m;
+      if(m !== null){
+        var lab = (m >= 0xF06A && m <= 0xF073) ? PDF_CIRC[m - 0xF06A] : '•';
+        out.push(lab + ' ' + tr);
+      } else if(tr) out.push(tr);
+    }
+    return out.join('\n');
   }
   async function pdfTranslatePage(){
     if(!pdfDoc){ showToast('Apri prima un PDF'); return; }
@@ -1165,7 +1219,7 @@
     if(!wrapper || !pdfCurDivs || !pdfCurDivs.length){ showToast('Pagina senza testo (è un’immagine): non posso tradurla'); return; }
     pdfTrBusy = true; btn.textContent = '⏳ Traduco…';
     try{
-      var paras = pdfBuildParas(wrapper), todo = paras.filter(function(p){ return pdfTrNeeds(p.s); }), done = 0, fails = 0, idx = 0;
+      var paras = pdfBuildParas(wrapper), todo = paras.filter(function(p){ return pdfTrNeeds(p.s.replace(/[\uE000-\uF8FF]/g, ' ')); }), done = 0, fails = 0, idx = 0;
       if(!todo.length){ showToast('Nessun testo da tradurre in questa pagina'); btn.textContent = '🇮🇹 Traduci'; pdfTrBusy = false; return; }
       async function worker(){
         while(idx < todo.length){
@@ -1181,13 +1235,17 @@
       wrapper.appendChild(layer);
       todo.forEach(function(p){
         if(!p.it) return;
-        var el = document.createElement('div'); el.className = 'pdf-tr-box'; el.textContent = p.it;
+        var below = Infinity;
+        paras.forEach(function(q){ if(q !== p && q.t > p.t + 0.5 * p.h && q.l < p.r && q.r > p.l && q.t < below) below = q.t; });
         var w = p.r - p.l + 2, h = p.b - p.t + 2;
-        el.style.left = (p.l - 1) + 'px'; el.style.top = (p.t - 1) + 'px'; el.style.width = w + 'px'; el.style.height = h + 'px';
+        var allowed = Math.max(h, Math.min((below === Infinity ? p.t + h * 2.5 : below) - p.t - 1, h * 2.5));
+        var el = document.createElement('div'); el.className = 'pdf-tr-box'; el.textContent = p.it;
+        el.style.left = (p.l - 1) + 'px'; el.style.top = (p.t - 1) + 'px'; el.style.width = w + 'px'; el.style.height = 'auto';
         var fs = Math.max(5, p.last.h * 0.86); el.style.fontSize = fs + 'px';
         layer.appendChild(el);
         var guard = 0;
-        while((el.scrollHeight > h + 1 || el.scrollWidth > w + 1) && fs > 3.5 && guard++ < 60){ fs -= 0.4; el.style.fontSize = fs + 'px'; }
+        while((el.offsetHeight > allowed + 1 || el.scrollWidth > w + 1) && fs > 3.5 && guard++ < 80){ fs -= 0.4; el.style.fontSize = fs + 'px'; }
+        el.style.height = Math.max(h, el.offsetHeight) + 'px';
       });
       pdfTrOn = true; btn.textContent = '🇬🇧 Originale'; btn.classList.add('on');
       if(fails) showToast('⚠️ ' + fails + ' blocchi non tradotti');
@@ -1746,7 +1804,18 @@
 
           <div class="cols">
             <div>
-              <div class="v-title current">v42 <span class="date">(27/10)</span></div>
+              <div class="v-title current">v44 <span class="date">(27/10)</span></div>
+              <div class="v-body">
+                • Traduzione PDF: impaginazione migliorata (elenchi, punti ①②, tabelle)
+              </div>
+
+              <div class="v-title">v43 <span class="date">(27/10)</span></div>
+              <div class="v-body">
+                • Nuovo tasto <b>🔩 Codici ricambi</b>: inserisci un codice (disegno, unità o modello) e vedi le corrispondenze e in quali manuali compare<br>
+                • Manuale THE400 (STEA1105): ora ricercabile e traducibile
+              </div>
+
+              <div class="v-title">v42 <span class="date">(27/10)</span></div>
               <div class="v-body">
                 • Badge <b>Online / Offline</b> in basso<br>
                 • Tasto <b>🇮🇹 Traduci</b> in basso nel PDF: rigenera la pagina con il testo <b>tradotto in italiano</b> al suo posto (serve internet); ripremi per tornare alla pagina originale
@@ -1884,7 +1953,7 @@
   });
 </script>
 <div class="app-footer">
-  <span class="ver" onclick="showAbout()" style="cursor:pointer" title="Info e cronologia versioni">v42 &nbsp;ⓘ</span>
+  <span class="ver" onclick="showAbout()" style="cursor:pointer" title="Info e cronologia versioni">v44 &nbsp;ⓘ</span>
   <span class="net" id="netBadge"><i></i><span id="netTxt">Online</span></span>
   <span class="logo"><span class="dot"></span>TR/software</span>
 </div>
