@@ -296,7 +296,7 @@
   function unlock(){
     var w=document.getElementById('gateWrap'); if(w) w.style.display='none';
     if(!document.querySelector('link[rel=manifest]')){var l=document.createElement('link');l.rel='manifest';l.href='manifest.json';document.head.appendChild(l);}
-    if('serviceWorker' in navigator && location.protocol.indexOf('http')===0){navigator.serviceWorker.register('service-worker.js').catch(function(){});}
+    if('serviceWorker' in navigator && location.protocol.indexOf('http')===0){navigator.serviceWorker.register('service-worker.js',{updateViaCache:'none'}).catch(function(){});}
   }
   if(!gated){ document.addEventListener('DOMContentLoaded',unlock); return; }
   function sha(t){
@@ -2123,7 +2123,12 @@ var CODICI_PLAB={"STE85357:309":"THL300 / THL400","STE85357:310":"THL500 / THL60
 
           <div class="cols">
             <div>
-              <div class="v-title current">v55 <span class="date">(28/10)</span></div>
+              <div class="v-title current">v56 <span class="date">(28/10)</span></div>
+              <div class="v-body">
+                • Aggiornamento automatico più affidabile della versione installata dal browser
+              </div>
+
+              <div class="v-title">v55 <span class="date">(28/10)</span></div>
               <div class="v-body">
                 • Serie THL: <b>TSL3000</b> e <b>TSL3000E</b> ora sono due controller separati (ognuno con la sua foto e la sua interfaccia)
               </div>
@@ -2330,7 +2335,7 @@ var CODICI_PLAB={"STE85357:309":"THL300 / THL400","STE85357:310":"THL500 / THL60
   });
 </script>
 <div class="app-footer">
-  <span class="ver" onclick="showAbout()" style="cursor:pointer" title="Info e cronologia versioni">v55 &nbsp;ⓘ</span>
+  <span class="ver" onclick="showAbout()" style="cursor:pointer" title="Info e cronologia versioni">v56 &nbsp;ⓘ</span>
   <span class="net" id="netBadge"><i></i><span id="netTxt">Online</span></span>
   <span class="logo"><span class="dot"></span>TR/software</span>
 </div>
