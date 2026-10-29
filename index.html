@@ -1701,6 +1701,22 @@ var CODICI_PLAB={"STE85357:309":"THL300 / THL400","STE85357:310":"THL500 / THL60
   function goHome(){ curModel=curCtrl=curArm=curMaint=null; hideAll(); document.getElementById('controllerGrid').style.display='grid'; setCrumb(); }
 
   /* ════════ LIVELLO 1: CONTROLLER ════════ */
+  /* v69: manuali dei controller mancanti nelle liste (verifica incrociata con i frontespizi dei PDF) */
+  (function(){
+    function addDocs(c, list){
+      var cur = CTRL_DOCS[c] || [];
+      list.forEach(function(x){ if(!cur.some(function(y){ return y[1]===x[1]; })) cur = cur.concat([x]); });
+      CTRL_DOCS[c] = cur;
+    }
+    addDocs('TS2000', [['User Parameter (TS1000/TS2000)','STE71296'],['Cavi I/O opzionali (SR7000/TS2000/TS2100)','STE71389'],['TP5100 Operation Manual','STEA1259']]);
+    addDocs('TS2100', [['Cavi I/O opzionali (SR7000/TS2000/TS2100)','STE71389']]);
+    addDocs('SR7000', [['Cavi I/O opzionali (SR7000/TS2000/TS2100)','STE71389']]);
+    addDocs('TS3000', [['Funzioni aggiuntive (Additional Function)','STE85482'],['TP5100 Operation Manual','STEA1259']]);
+    addDocs('TS3100', [['Funzioni aggiuntive (Additional Function)','STE85482'],['Vision + Conveyor Sync','STE80866']]);
+    addDocs('TSL3000', [['Funzioni aggiuntive (Additional Function)','STE85482']]);
+    addDocs('TSL3000E', [['Funzioni aggiuntive (Additional Function)','STE85482']]);
+    addDocs('TS5000-SS', [['THL soffitto (ceiling type)','STE85431'],['THL-IP6X','STE85494']]);
+  })();
   CTRL_DOCS['TS3000E'] = [['\uD83D\uDEE1\uFE0F Safety box \u2014 TS3SFB unit','STE80862']].concat(CTRL_DOCS['TS3000']||[]);
   CTRL_DOCS['TS3100E'] = [['\uD83D\uDEE1\uFE0F Safety box \u2014 TS3SFB unit','STE80862']].concat(CTRL_DOCS['TS3100']||[]);
   CTRL_DOCS['TS1000'] = [["Operator's Manual + Alarmi (TS1000/TS2000)",'STE71283'],['Startup','STE71282'],['Robot Language (SCOL)','STE71284'],['Interface','STE71285'],['Communication','STE71289'],['User Parameter','STE71296'],['Simple PLC','STE71299'],['Cavi I/O','STE71291'],['Manutenzione TH180/250A/350A + controller TS1000','STE73996'],['Trasporto e installazione TH180/250A/350A','STE73995'],['Sicurezza TH series','STE73997'],['Manutenzione TH250/TH350 + controller TS1000','STE71287'],['Trasporto e installazione TH250/TH350','STE71286'],['Sicurezza TH250/TH350','STE71288'],['TP5100 Operation Manual','STEA1259']];
@@ -1924,6 +1940,25 @@ var CODICI_PLAB={"STE85357:309":"THL300 / THL400","STE85357:310":"THL500 / THL60
     }
   }
 
+  /* v70: manuali dedicati al braccio (ricavati dai frontespizi dei PDF): id -> [tipo, bracci, controller compatibili] */
+  const MAN_META = {"STE79087":["Trasporto e installazione",["TH650A"],["TS2100"]],"STE79088":["Manutenzione",["TH650A"],["TS2100"]],"STE79091":["Sicurezza",["TH1050A","TH450A","TH550A","TH650A","TH850A"],["TS2000","TS2100"]],"STE79095":["Trasporto e installazione",["TH1050A","TH850A"],["TS2100"]],"STE79096":["Manutenzione",["TH1050A","TH850A"],["TS2100"]],"STE80716":["Ceiling type",["TH1050A-T","TH650A-T"],["TS2100"]],"STE80742":["Trasporto e installazione",["TH650A"],["TS2000"]],"STE80743":["Manutenzione",["TH650A"],["TS2000"]],"STE80747":["Dust-proof",["TH650A"],["TS2100"]],"STE80749":["Clean",["TH650A"],["TS2100"]],"STE80753":["Trasporto e installazione",["TH1050A","TH1200A","TH850A"],["TS3100"]],"STE80754":["Manutenzione",["TH1050A","TH1200A","TH850A"],["TS3100"]],"STE80755":["Sicurezza",["TH1050A","TH1200A","TH180","TH250A","TH350A","TH450A","TH550A","TH650A","TH850A","THP550","THP700"],["TS3000","TS3100"]],"STE80765":["Dust-proof",["TH1050A","TH850A"],["TS2100"]],"STE80770":["Differenze",["TH550","THP550"],[]],"STE80772":["Trasporto e installazione",["THP550"],["TS3000"]],"STE80773":["Manutenzione",["TH450A","TH550A","THP550"],["TS3000"]],"STE80783":["Dust-proof",["TH450A-IP","TH550A-IP","THP550-IP"],["TS3000"]],"STE80807":["Differenze",["TH450","TH450A","TH550","TH550A"],[]],"STE80808":["Trasporto e installazione",["TH450A","TH550A"],["TS3000"]],"STE80870":["Ceiling type",["TH450A-T","TH550A-T","THP550-T"],["TS3000"]],"STE80872":["Clean",["TH450A-CRB","TH550A-CRB","THP550-CRB"],["TS3000"]],"STE80886":["Trasporto e installazione",["TH1050A","TH850A"],["TS2000"]],"STE80887":["Manutenzione",["TH1050A","TH850A"],["TS2000"]],"STE80899":["Trasporto e installazione",["TH450A","TH550A"],["TS2000"]],"STE85300":["Manutenzione",["TH450A","TH550A"],["TS2000"]],"STE85305":["Trasporto e installazione",["TH650A"],["TS3100"]],"STE85306":["Manutenzione",["TH650A"],["TS3100"]],"STE85320":["Trasporto e installazione",["THP700"],["TS3100"]],"STE85321":["Manutenzione",["THP700"],["TS3100"]],"STE85336":["Dust-proof",["THP700-IP"],["TS3100"]],"STE85337":["Clean",["THP700-CRB"],["TS3100"]],"STE85356":["Trasporto e installazione",["THL1000","THL1200","THL300","THL400","THL500","THL600","THL700","THL800","THL900"],["TS3000","TSL3000"]],"STE85357":["Manutenzione",["THL1000","THL1200","THL300","THL400","THL500","THL600","THL700","THL800","THL900"],["TS3000","TSL3000"]],"STE85358":["Sicurezza",["THL1000","THL1200","THL300","THL400","THL500","THL600","THL700","THL800","THL900"],["TS3000","TSL3000"]],"STE85389":["Trasporto e installazione",["TH180","TH250A","TH350A"],["TS3000"]],"STE85390":["Manutenzione",["TH180","TH250A","TH350A"],["TS3000"]],"STE85431":["Ceiling type",["THL1000-T","THL400-T","THL500-T","THL600-T","THL700-T","THL800-T","THL900-T"],["TS3000","TS5000","TSL3000"]],"STE85442":["Clean",["THL1000-SC","THL300-SC","THL400-SC","THL500-SC","THL600-SC","THL700-SC","THL800-SC","THL900-SC"],[]],"STE85494":["Dust-proof",["THL500-IP6X","THL600-IP6X","THL700-IP6X"],["TS5000","TSL3000"]],"STEA1112":["Sicurezza",["THE400"],["TSL3000"]],"STEA1200":["Dust-proof",["THE400"],["TS5000","TSL3000"]],"STEA1204":["Ceiling type",["THE600"],["TS5000"]],"STEA1212":["Sicurezza",["THE600-E"],["TS5000"]],"STEA1214":["Sicurezza",["THE400-E"],["TS5000"]],"STEA1219":["Ceiling type",["THE600-T"],[]],"STEA1235":["Sicurezza",["THL500","THL600","THL700"],["TS5000"]],"STEA1239":["Sicurezza",["THE400","THE400T"],["TS5000"]],"STEA1246":["Sicurezza",["THE1000","THE800"],["TS5000"]],"STEA1248":["Sicurezza",["THE1000-E","THE800-E"],["TS5000"]],"STE73995":["Trasporto e installazione",["TH180","TH250A","TH350A"],["TS1000"]],"STE73996":["Manutenzione",["TH180","TH250A","TH350A"],["TS1000"]],"STE73997":["Sicurezza",["TH180","TH250A","TH350A"],["TS1000"]],"STE71286":["Trasporto e installazione",["TH250","TH350"],["TS1000"]],"STE71287":["Manutenzione",["TH250","TH350"],["TS1000"]],"STE71288":["Sicurezza",["TH250","TH350"],["TS1000"]],"STE73881":["Manutenzione",["TH450","TH550"],["TS2000","TS2100"]],"STE73882":["Trasporto e installazione",["TH450","TH550","TH650","TH850","TH1050"],["TS2000","TS2100"]],"STE73883":["Sicurezza",["TH450","TH550"],["TS2000","TS2100"]]};
+  const MAN_ORDER = ['Manutenzione','Trasporto e installazione','Sicurezza','Dust-proof','Clean','Ceiling type','Differenze'];
+  function ctrlBase(c){ var m=(c||'').match(/TSL?\d{4}/); return m?m[0]:''; }
+  function armManualList(arm, ctrl){
+    var cb = ctrlBase(ctrl), out = [];
+    Object.keys(MAN_META).forEach(function(id){
+      var m = MAN_META[id];
+      var toks = m[1].filter(function(t){ return t.split('-')[0] === arm; });
+      if(!toks.length) return;
+      if(m[2].length && cb && m[2].indexOf(cb) < 0) return;
+      var all = m[1];
+      var names = all.length>5 ? (all.length+' bracci') : all.join(' / ');
+      out.push({id:id, kind:m[0], label:m[0]+' — '+names});
+    });
+    out.sort(function(a,b){ return MAN_ORDER.indexOf(a.kind)-MAN_ORDER.indexOf(b.kind) || a.id.localeCompare(b.id); });
+    return out;
+  }
+
   function renderManuali(){
     const cc=MODELS[curModel].controllers[curCtrl];
     const alarmCode=getAlarmSource();
@@ -1944,10 +1979,19 @@ var CODICI_PLAB={"STE85357:309":"THL300 / THL400","STE85357:310":"THL500 / THL60
     h+=`<div class="manuals-section">`;
     h+=`<div class="manuals-section-title">🦾 Braccio ${esc(curArm)}</div>`;
     h+=makeItem('Manuale manutenzione — '+curArm, curMaint, 'maint');
+    armManualList(curArm, curCtrl).forEach(function(x){
+      if(x.id===curMaint) return;
+      h+=makeItem(x.label, x.id, x.kind==='Manutenzione'?'maint':'other');
+    });
     h+=`</div>`;
 
     // Sezione: Controller
-    const docs=CTRL_DOCS[curModel+'|'+curCtrl]||CTRL_DOCS[curCtrl]||[];
+    const HIDE_TH = ['STE80856','STE80857','STE80858','STE80859','STE80860','STE80897','STE80898','STE80884','STE80885','STE73868','STE73869','STE73871','STE73872','STE73873','STE73874','STE71371','STE71372','STE71373','STE79099','STE80700','STE71218','STE71219'];
+    const seenDoc = {};
+    const docs=(CTRL_DOCS[curModel+'|'+curCtrl]||CTRL_DOCS[curCtrl]||[]).filter(function(d){
+      if(MAN_META[d[1]] || d[1]===curMaint || seenDoc[d[1]]) return false;
+      if((curModel==='TH'||curModel==='THL') && HIDE_TH.indexOf(d[1])>=0) return false;
+      seenDoc[d[1]] = 1; return true; });
     if(docs.length){
       h+=`<div class="manuals-section">`;
       h+=`<div class="manuals-section-title">🎛️ Controller ${esc(curCtrl)}</div>`;
@@ -2201,7 +2245,17 @@ var CODICI_PLAB={"STE85357:309":"THL300 / THL400","STE85357:310":"THL500 / THL60
 
           <div class="cols">
             <div>
-              <div class="v-title current">v68 <span class="date">(29/10)</span></div>
+              <div class="v-title current">v70 <span class="date">(29/10)</span></div>
+              <div class="v-body">
+                • <b>Pagina Manuali riordinata</b>: nella sezione <b>Braccio</b> compaiono i manuali dedicati a quel braccio (manutenzione, trasporto e installazione, sicurezza, dust-proof, clean, ceiling, differenze), scelti in base al braccio e al controller; nella sezione <b>Controller</b> restano solo i manuali del controller
+              </div>
+
+              <div class="v-title">v69 <span class="date">(29/10)</span></div>
+              <div class="v-body">
+                • Verifica incrociata manuali ↔ controller: aggiunti i manuali che mancavano nelle liste dei controller — TS2000 (User Parameter, Cavi I/O, TP5100), TS2100 e SR7000 (Cavi I/O), TS3000 (Funzioni aggiuntive, TP5100), TS3100 (Funzioni aggiuntive, Vision + Conveyor), TSL3000/E (Funzioni aggiuntive), TS5000-SS (THL soffitto, THL-IP6X)
+              </div>
+
+              <div class="v-title">v68 <span class="date">(29/10)</span></div>
               <div class="v-body">
                 • Aggiunti i manuali mancanti nelle liste: con <b>TS1000</b> ora anche manutenzione, trasporto/installazione e sicurezza di TH250/TH350 (STE71287, 71286, 71288); con <b>TS2000/TS2100</b> manutenzione e trasporto di TH450/TH550 (STE73881, STE73882)
               </div>
@@ -2473,7 +2527,7 @@ var CODICI_PLAB={"STE85357:309":"THL300 / THL400","STE85357:310":"THL500 / THL60
   });
 </script>
 <div class="app-footer">
-  <span class="ver" onclick="showAbout()" style="cursor:pointer" title="Info e cronologia versioni">v68 &nbsp;ⓘ</span>
+  <span class="ver" onclick="showAbout()" style="cursor:pointer" title="Info e cronologia versioni">v70 &nbsp;ⓘ</span>
   <span class="net" id="netBadge"><i></i><span id="netTxt">Online</span></span>
   <span class="logo"><span class="dot"></span>TR/software</span>
 </div>
