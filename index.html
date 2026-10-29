@@ -1967,7 +1967,7 @@ var CODICI_PLAB={"STE85357:309":"THL300 / THL400","STE85357:310":"THL500 / THL60
     const emojiMap={maint:'📖',alarm:'⚠️',lang:'💻',plc:'⚙️',comm:'🔌',other:'📄'};
     function makeItem(label, pdf, cls){
       const emoji=emojiMap[cls]||'📄';
-      return `<div class="manual-item" onclick="openPdf(pdf)">
+      return `<div class="manual-item" onclick="openPdf('${pdf}')">
         <div class="manual-icon ${cls}">${emoji}</div>
         <div class="manual-info"><div class="manual-title">${esc(label)}</div><div class="manual-code">${pdf}.pdf</div></div>
         <div class="manual-arrow">›</div></div>`;
@@ -2245,7 +2245,12 @@ var CODICI_PLAB={"STE85357:309":"THL300 / THL400","STE85357:310":"THL500 / THL60
 
           <div class="cols">
             <div>
-              <div class="v-title current">v70 <span class="date">(29/10)</span></div>
+              <div class="v-title current">v71 <span class="date">(29/10)</span></div>
+              <div class="v-body">
+                • <b>Corretto</b>: nella pagina Manuali il tocco sul manuale non apriva il PDF
+              </div>
+
+              <div class="v-title">v70 <span class="date">(29/10)</span></div>
               <div class="v-body">
                 • <b>Pagina Manuali riordinata</b>: nella sezione <b>Braccio</b> compaiono i manuali dedicati a quel braccio (manutenzione, trasporto e installazione, sicurezza, dust-proof, clean, ceiling, differenze), scelti in base al braccio e al controller; nella sezione <b>Controller</b> restano solo i manuali del controller
               </div>
@@ -2527,7 +2532,7 @@ var CODICI_PLAB={"STE85357:309":"THL300 / THL400","STE85357:310":"THL500 / THL60
   });
 </script>
 <div class="app-footer">
-  <span class="ver" onclick="showAbout()" style="cursor:pointer" title="Info e cronologia versioni">v70 &nbsp;ⓘ</span>
+  <span class="ver" onclick="showAbout()" style="cursor:pointer" title="Info e cronologia versioni">v71 &nbsp;ⓘ</span>
   <span class="net" id="netBadge"><i></i><span id="netTxt">Online</span></span>
   <span class="logo"><span class="dot"></span>TR/software</span>
 </div>
